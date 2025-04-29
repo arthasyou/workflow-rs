@@ -1,4 +1,3 @@
-pub mod compiler;
 pub mod edge;
 pub mod graph;
 pub mod node;

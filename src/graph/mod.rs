@@ -3,10 +3,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{
-    edge::Edge,
-    node::{Node, NodeKind},
-};
+use crate::{edge::Edge, node::Node, runner::Runner};
 
 #[derive(Serialize, Deserialize)]
 pub struct Graph {
@@ -130,108 +127,8 @@ impl Graph {
     }
 
     pub fn invoke(&self, input: Value) -> Result<Value, String> {
-        if !self.compiled {
-            return Err("Graph must be compiled before invoke.".into());
-        }
-
-        // 初始化每个节点当前待处理的前置节点数量
-        let mut pending_predecessors: HashMap<String, usize> = HashMap::new();
-        for id in self.nodes.keys() {
-            let preds = self.predecessors.get(id).map_or(0, |s| s.len());
-            pending_predecessors.insert(id.clone(), preds);
-        }
-
-        // 输入数据，按节点ID保存节点执行结果
-        let mut node_outputs: HashMap<String, Value> = HashMap::new();
-
-        // 先把输入数据给 start nodes
-        let mut queue = VecDeque::new();
-        for (id, &count) in &pending_predecessors {
-            if count == 0 {
-                queue.push_back(id.clone());
-                node_outputs.insert(id.clone(), input.clone()); // 初始数据给start nodes
-            }
-        }
-
-        while let Some(current) = queue.pop_front() {
-            let current_output = node_outputs.get(&current).cloned().unwrap_or(Value::Null);
-
-            // 执行当前节点逻辑（这里先简单模拟：把当前输出+节点id打包）
-            let result = self.execute_node(&current, current_output)?;
-
-            node_outputs.insert(current.clone(), result.clone());
-
-            // 处理后继节点
-            if let Some(next_nodes) = self.successors.get(&current) {
-                for next in next_nodes {
-                    // 前置节点执行完了，减少依赖计数
-                    if let Some(pending) = pending_predecessors.get_mut(next) {
-                        *pending -= 1;
-                        if *pending == 0 {
-                            queue.push_back(next.clone());
-                        }
-                    }
-                }
-            }
-        }
-
-        // 找 end nodes
-        let mut end_nodes: Vec<String> = vec![];
-        for (id, succ) in &self.successors {
-            if succ.is_empty() {
-                end_nodes.push(id.clone());
-            }
-        }
-
-        if end_nodes.is_empty() {
-            return Err("No end node found.".into());
-        }
-
-        // 返回其中一个 end node 的输出
-        let output = node_outputs
-            .get(&end_nodes[0])
-            .cloned()
-            .unwrap_or(Value::Null);
-        Ok(output)
-    }
-}
-
-impl Graph {
-    fn execute_node(&self, node_id: &str, input: Value) -> Result<Value, String> {
-        let node = self
-            .nodes
-            .get(node_id)
-            .ok_or(format!("Node {} not found", node_id))?;
-
-        match node.kind {
-            NodeKind::Prompt => {
-                if let Some(config) = &node.config {
-                    if let Some(template) = config.get("template").and_then(|v| v.as_str()) {
-                        let filled = template.replace("{input}", input.as_str().unwrap_or(""));
-                        Ok(Value::String(filled))
-                    } else {
-                        Ok(Value::String(format!("Prompted: {}", input)))
-                    }
-                } else {
-                    Ok(Value::String(format!("Prompted: {}", input)))
-                }
-            }
-            NodeKind::Model => {
-                if let Some(config) = &node.config {
-                    if let Some(model_name) = config.get("model_name").and_then(|v| v.as_str()) {
-                        Ok(Value::String(format!(
-                            "Model({}) output based on: {}",
-                            model_name, input
-                        )))
-                    } else {
-                        Ok(Value::String(format!("Model output based on: {}", input)))
-                    }
-                } else {
-                    Ok(Value::String(format!("Model output based on: {}", input)))
-                }
-            }
-            NodeKind::Retriever => Ok(Value::String(format!("Retrieved info for: {}", input))),
-        }
+        let mut runner = Runner::new(self);
+        runner.run(input)
     }
 }
 
