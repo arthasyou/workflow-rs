@@ -26,7 +26,7 @@ mod tests {
             kind: NodeKind::Model,
         });
 
-        g.add_edge("prompt", "model");
+        let _ = g.add_edge("prompt", "model");
 
         println!("Graph nodes: {:?}", g.nodes);
         println!("Graph edges: {:?}", g.edges);
@@ -43,7 +43,7 @@ mod tests {
             id: "model".into(),
             kind: NodeKind::Model,
         });
-        g.add_edge("prompt", "model");
+        let _ = g.add_edge("prompt", "model");
 
         let json = g.to_json();
         println!("{}", json);
@@ -60,7 +60,7 @@ mod tests {
             id: "model".into(),
             kind: NodeKind::Model,
         });
-        g.add_edge("prompt", "model");
+        let _ = g.add_edge("prompt", "model");
 
         let json = g.to_json();
         println!("JSON:\n{}", json);
