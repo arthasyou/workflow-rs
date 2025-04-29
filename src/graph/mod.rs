@@ -14,8 +14,8 @@ pub struct Graph {
     pub edges: Vec<Edge>,
     pub compiled: bool,
 
-    pub predecessors: HashMap<String, HashSet<String>>, // 节点 -> 它的前置节点
-    pub successors: HashMap<String, HashSet<String>>,   // 节点 -> 它的后继节点
+    pub predecessors: HashMap<String, HashSet<String>>, // 节点 -> 它的前置节点(可以有多个)
+    pub successors: HashMap<String, HashSet<String>>,   // 节点 -> 它的后继节点(可以有多个)
 }
 
 impl Graph {
@@ -68,7 +68,7 @@ impl Graph {
             in_degree.insert(key.clone(), 0);
         }
 
-        // 3. 建立 successors、predecessors、入度表
+        // 3. 建立 successors、predecessors、in_degree(入度表)
         for edge in &self.edges {
             // 检查节点存在
             if !self.nodes.contains_key(&edge.start) || !self.nodes.contains_key(&edge.end) {
@@ -88,7 +88,6 @@ impl Graph {
         }
 
         // 4. Kahn 拓扑排序：检查是否有环
-        use std::collections::VecDeque;
         let mut queue = VecDeque::new();
         for (node, &deg) in &in_degree {
             if deg == 0 {
@@ -116,7 +115,7 @@ impl Graph {
             return Err("Cycle detected in graph!".into());
         }
 
-        // 确保每个节点都在 successors 和 predecessors 中注册
+        // 5. 确保每个节点都在 successors 和 predecessors 中注册
         for id in self.nodes.keys() {
             self.successors
                 .entry(id.clone())
@@ -206,17 +205,32 @@ impl Graph {
 
         match node.kind {
             NodeKind::Prompt => {
-                // 模拟 Prompt节点，生成简单文本
-                Ok(Value::String(format!("Prompted: {}", input)))
+                if let Some(config) = &node.config {
+                    if let Some(template) = config.get("template").and_then(|v| v.as_str()) {
+                        let filled = template.replace("{input}", input.as_str().unwrap_or(""));
+                        Ok(Value::String(filled))
+                    } else {
+                        Ok(Value::String(format!("Prompted: {}", input)))
+                    }
+                } else {
+                    Ok(Value::String(format!("Prompted: {}", input)))
+                }
             }
             NodeKind::Model => {
-                // 模拟 Model节点，返回推理结果
-                Ok(Value::String(format!("Model output based on: {}", input)))
+                if let Some(config) = &node.config {
+                    if let Some(model_name) = config.get("model_name").and_then(|v| v.as_str()) {
+                        Ok(Value::String(format!(
+                            "Model({}) output based on: {}",
+                            model_name, input
+                        )))
+                    } else {
+                        Ok(Value::String(format!("Model output based on: {}", input)))
+                    }
+                } else {
+                    Ok(Value::String(format!("Model output based on: {}", input)))
+                }
             }
-            NodeKind::Retriever => {
-                // 模拟 Retriever节点，返回检索信息
-                Ok(Value::String(format!("Retrieved info for: {}", input)))
-            }
+            NodeKind::Retriever => Ok(Value::String(format!("Retrieved info for: {}", input))),
         }
     }
 }
@@ -237,10 +251,12 @@ mod tests {
         g.add_node(Node {
             id: "prompt".into(),
             kind: NodeKind::Prompt,
+            config: None,
         });
         g.add_node(Node {
             id: "model".into(),
             kind: NodeKind::Model,
+            config: None,
         });
         let _ = g.add_edge("prompt", "model");
 
@@ -264,10 +280,12 @@ mod tests {
         g.add_node(Node {
             id: "a".into(),
             kind: NodeKind::Prompt,
+            config: None,
         });
         g.add_node(Node {
             id: "b".into(),
             kind: NodeKind::Model,
+            config: None,
         });
         let _ = g.add_edge("a", "b");
 
@@ -283,10 +301,12 @@ mod tests {
         g.add_node(Node {
             id: "prompt".into(),
             kind: NodeKind::Prompt,
+            config: None,
         });
         g.add_node(Node {
             id: "model".into(),
             kind: NodeKind::Model,
+            config: None,
         });
 
         let _ = g.add_edge("prompt", "model");
@@ -297,5 +317,24 @@ mod tests {
         let output = g.invoke(input).expect("Invoke failed");
 
         println!("Final output: {}", output);
+    }
+
+    #[test]
+    fn test_execute_node_with_config() {
+        let mut g = Graph::new();
+
+        g.add_node(Node {
+            id: "prompt".into(),
+            kind: NodeKind::Prompt,
+            config: Some(serde_json::json!({
+                "template": "Hello, {input}! Welcome!"
+            })),
+        });
+
+        let input = Value::String("Alice".into());
+        g.compile().unwrap();
+
+        let output = g.invoke(input).unwrap();
+        println!("Test output: {}", output);
     }
 }

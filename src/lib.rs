@@ -20,10 +20,12 @@ mod tests {
         g.add_node(Node {
             id: "prompt".into(),
             kind: NodeKind::Prompt,
+            config: None,
         });
         g.add_node(Node {
             id: "model".into(),
             kind: NodeKind::Model,
+            config: None,
         });
 
         let _ = g.add_edge("prompt", "model");
@@ -38,10 +40,12 @@ mod tests {
         g.add_node(Node {
             id: "prompt".into(),
             kind: NodeKind::Prompt,
+            config: None,
         });
         g.add_node(Node {
             id: "model".into(),
             kind: NodeKind::Model,
+            config: None,
         });
         let _ = g.add_edge("prompt", "model");
 
@@ -55,10 +59,12 @@ mod tests {
         g.add_node(Node {
             id: "prompt".into(),
             kind: NodeKind::Prompt,
+            config: None,
         });
         g.add_node(Node {
             id: "model".into(),
             kind: NodeKind::Model,
+            config: None,
         });
         let _ = g.add_edge("prompt", "model");
 
