@@ -3,7 +3,12 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{edge::Edge, node::Node, runner::Runner};
+use crate::{
+    edge::Edge,
+    error::{Error, Result},
+    node::Node,
+    runner::Runner,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct Graph {
@@ -30,12 +35,12 @@ impl Graph {
         self.nodes.insert(node.id.clone(), node);
     }
 
-    pub fn add_edge(&mut self, start: &str, end: &str) -> Result<(), String> {
+    pub fn add_edge(&mut self, start: &str, end: &str) -> Result<()> {
         if !self.nodes.contains_key(start) {
-            return Err(format!("Start node '{}' not found", start));
+            return Err(Error::NodeNotFound("Start node".to_owned()));
         }
         if !self.nodes.contains_key(end) {
-            return Err(format!("End node '{}' not found", end));
+            return Err(Error::NodeNotFound("End node".to_owned()));
         }
 
         self.edges.push(Edge {
@@ -50,11 +55,12 @@ impl Graph {
         serde_json::to_string_pretty(self).expect("Failed to serialize Graph")
     }
 
-    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
-        serde_json::from_str(json)
+    pub fn from_json(json: &str) -> Result<Self> {
+        let graph = serde_json::from_str(json)?;
+        Ok(graph)
     }
 
-    pub fn compile(&mut self) -> Result<(), String> {
+    pub fn compile(&mut self) -> Result<()> {
         // 1. 清空旧的 predecessors, successors
         self.predecessors.clear();
         self.successors.clear();
@@ -69,7 +75,10 @@ impl Graph {
         for edge in &self.edges {
             // 检查节点存在
             if !self.nodes.contains_key(&edge.start) || !self.nodes.contains_key(&edge.end) {
-                return Err(format!("Invalid edge from {} to {}", edge.start, edge.end));
+                return Err(Error::InvalidEdge {
+                    start: edge.start.clone(),
+                    end: edge.end.clone(),
+                });
             }
 
             self.successors
@@ -109,7 +118,7 @@ impl Graph {
         }
 
         if visited_count != self.nodes.len() {
-            return Err("Cycle detected in graph!".into());
+            return Err(Error::CycleDetected);
         }
 
         // 5. 确保每个节点都在 successors 和 predecessors 中注册
@@ -126,7 +135,7 @@ impl Graph {
         Ok(())
     }
 
-    pub fn invoke(&self, input: Value) -> Result<Value, String> {
+    pub fn invoke(&self, input: Value) -> Result<Value> {
         let mut runner = Runner::new(self);
         runner.run(input)
     }

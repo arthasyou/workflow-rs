@@ -3,13 +3,17 @@ pub mod branch;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::types::Executable;
+use crate::{
+    error::{Error, Result},
+    types::Executable,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NodeKind {
     Prompt,
     Model,
     Retriever,
+    Branch,
     // 以后可以加更多类型
 }
 
@@ -21,7 +25,7 @@ pub struct Node {
 }
 
 impl Executable for Node {
-    fn execute(&self, input: Value) -> Result<Value, String> {
+    fn execute(&self, input: Value) -> Result<Value> {
         match self.kind {
             NodeKind::Prompt => {
                 if let Some(cfg) = &self.config {
@@ -34,6 +38,24 @@ impl Executable for Node {
             }
             NodeKind::Model => Ok(Value::String(format!("Model output based on: {}", input))),
             NodeKind::Retriever => Ok(Value::String(format!("Retrieved info for: {}", input))),
+            NodeKind::Branch => {
+                if let Some(config) = &self.config {
+                    if let Some(branches) = config.get("branches").and_then(|v| v.as_object()) {
+                        if let Some(input_str) = input.as_str() {
+                            if let Some(target_node) = branches.get(input_str) {
+                                return Ok(Value::String(
+                                    target_node.as_str().unwrap_or("").to_string(),
+                                ));
+                            }
+                        }
+                    }
+                    // fallback
+                    if let Some(default) = config.get("default").and_then(|v| v.as_str()) {
+                        return Ok(Value::String(default.to_string()));
+                    }
+                }
+                Err(Error::BranchConfigMissing)
+            }
         }
     }
 }

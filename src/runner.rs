@@ -2,7 +2,11 @@ use std::collections::{HashMap, VecDeque};
 
 use serde_json::Value;
 
-use crate::{graph::Graph, types::Executable};
+use crate::{
+    error::{Error, Result},
+    graph::Graph,
+    types::Executable,
+};
 
 pub struct Runner<'a> {
     graph: &'a Graph,
@@ -17,12 +21,11 @@ impl<'a> Runner<'a> {
         }
     }
 
-    pub fn run(&mut self, input: Value) -> Result<Value, String> {
+    pub fn run(&mut self, input: Value) -> Result<Value> {
         if !self.graph.compiled {
-            return Err("Graph must be compiled before running.".into());
+            return Err(Error::GraphNotCompiled);
         }
 
-        // 执行逻辑（和 graph.invoke 逻辑一致）
         let mut pending_predecessors: HashMap<String, usize> = HashMap::new();
         for id in self.graph.nodes.keys() {
             let preds = self.graph.predecessors.get(id).map_or(0, |s| s.len());
@@ -39,7 +42,13 @@ impl<'a> Runner<'a> {
 
         while let Some(current) = queue.pop_front() {
             let input = self.outputs.get(&current).cloned().unwrap_or(Value::Null);
-            let node = self.graph.nodes.get(&current).ok_or("Node not found")?;
+
+            let node = self
+                .graph
+                .nodes
+                .get(&current)
+                .ok_or_else(|| Error::NodeNotFound(current.clone()))?;
+
             let output = node.execute(input.clone())?;
             self.outputs.insert(current.clone(), output.clone());
 
@@ -55,7 +64,6 @@ impl<'a> Runner<'a> {
             }
         }
 
-        // 找到 end 节点
         let end_nodes: Vec<_> = self
             .graph
             .successors
@@ -65,7 +73,7 @@ impl<'a> Runner<'a> {
             .collect();
 
         if end_nodes.is_empty() {
-            return Err("No end node found.".into());
+            return Err(Error::NoEndNode);
         }
 
         Ok(self

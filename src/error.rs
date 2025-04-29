@@ -1,0 +1,41 @@
+use std::io;
+
+use thiserror::Error as ThisError;
+
+#[derive(ThisError, Debug)]
+pub enum Error {
+    #[error("IO error: {0}")]
+    Io(#[from] io::Error),
+
+    #[error("serde_json error: {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
+
+    #[error("Graph not compiled.")]
+    GraphNotCompiled,
+
+    #[error("Node `{0}` not found.")]
+    NodeNotFound(String),
+
+    #[error("Execution error: {0}")]
+    ExecutionError(String),
+
+    #[error("Invalid edge from `{start}` to `{end}`.")]
+    InvalidEdge { start: String, end: String },
+
+    #[error("No end node found.")]
+    NoEndNode,
+
+    #[error("Cycle detected in graph.")]
+    CycleDetected,
+
+    #[error("Invalid branch input.")]
+    InvalidBranchInput,
+
+    #[error("Branch config missing.")]
+    BranchConfigMissing,
+
+    #[error("Other system error: {0}")]
+    SystemError(String),
+}
+
+pub type Result<T> = core::result::Result<T, Error>;
