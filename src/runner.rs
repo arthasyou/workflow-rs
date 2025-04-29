@@ -5,6 +5,7 @@ use serde_json::Value;
 use crate::{
     error::{Error, Result},
     graph::Graph,
+    node::NodeKind,
     types::Executable,
 };
 
@@ -52,12 +53,25 @@ impl<'a> Runner<'a> {
             let output = node.execute(input.clone())?;
             self.outputs.insert(current.clone(), output.clone());
 
-            if let Some(next_nodes) = self.graph.successors.get(&current) {
-                for next in next_nodes {
-                    if let Some(pending) = pending_predecessors.get_mut(next) {
-                        *pending -= 1;
-                        if *pending == 0 {
-                            queue.push_back(next.clone());
+            match node.kind {
+                NodeKind::Branch => {
+                    // 🎯 Branch节点，动态跳转
+                    let next_node_id = output.as_str().ok_or(Error::InvalidBranchInput)?;
+                    if !self.graph.nodes.contains_key(next_node_id) {
+                        return Err(Error::NodeNotFound(next_node_id.to_string()));
+                    }
+                    queue.push_back(next_node_id.to_string());
+                }
+                _ => {
+                    // 🎯 普通节点，按照 successors 正常走
+                    if let Some(next_nodes) = self.graph.successors.get(&current) {
+                        for next in next_nodes {
+                            if let Some(pending) = pending_predecessors.get_mut(next) {
+                                *pending -= 1;
+                                if *pending == 0 {
+                                    queue.push_back(next.clone());
+                                }
+                            }
                         }
                     }
                 }
