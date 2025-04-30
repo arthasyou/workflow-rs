@@ -43,13 +43,12 @@ impl Executable for Node {
                     if let Some(branches) = config.get("branches").and_then(|v| v.as_object()) {
                         if let Some(input_str) = input.as_str() {
                             if let Some(target_node) = branches.get(input_str) {
-                                return Ok(Value::String(
-                                    target_node.as_str().unwrap_or("").to_string(),
-                                ));
+                                if let Some(target_str) = target_node.as_str() {
+                                    return Ok(Value::String(target_str.to_string()));
+                                }
                             }
                         }
                     }
-                    // fallback
                     if let Some(default) = config.get("default").and_then(|v| v.as_str()) {
                         return Ok(Value::String(default.to_string()));
                     }

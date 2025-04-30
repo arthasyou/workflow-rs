@@ -1,0 +1,7 @@
+{
+  "branches": {
+    "yes": "a_node_id",
+    "no": "b_node_id"
+  },
+  "default": "fallback_node_id"
+}

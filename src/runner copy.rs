@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 
 use serde_json::Value;
 
@@ -28,7 +28,6 @@ impl<'a> Runner<'a> {
         }
 
         self.outputs.clear(); // 保证每次 run() 都干净
-        let mut executed: HashSet<String> = HashSet::new();
 
         let mut pending_predecessors: HashMap<String, usize> = HashMap::new();
         for id in self.graph.nodes.keys() {
@@ -45,12 +44,8 @@ impl<'a> Runner<'a> {
         }
 
         while let Some(current) = queue.pop_front() {
-            if executed.contains(&current) {
-                continue;
-            }
-            executed.insert(current.clone());
-
             let input_value = self.outputs.get(&current).cloned().unwrap_or(Value::Null);
+
             let node = self
                 .graph
                 .nodes
@@ -67,6 +62,8 @@ impl<'a> Runner<'a> {
                         return Err(Error::NodeNotFound(next_node_id.to_string()));
                     }
                     queue.push_back(next_node_id.to_string());
+
+                    // ✅ 注意：传递原 input，而不是 branch output
                     self.outputs
                         .insert(next_node_id.to_string(), input_value.clone());
                 }
