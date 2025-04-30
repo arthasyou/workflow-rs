@@ -11,7 +11,10 @@ use crate::{
 
 pub struct Runner<'a> {
     graph: &'a Graph,
-    outputs: HashMap<String, Value>, // 每个节点的执行结果
+    outputs: HashMap<String, Value>,
+    queue: VecDeque<String>,
+    pending_predecessors: HashMap<String, usize>,
+    executed: HashSet<String>,
 }
 
 impl<'a> Runner<'a> {
@@ -19,36 +22,49 @@ impl<'a> Runner<'a> {
         Self {
             graph,
             outputs: HashMap::new(),
+            queue: VecDeque::new(),
+            pending_predecessors: HashMap::new(),
+            executed: HashSet::new(),
         }
     }
 
     pub fn run(&mut self, input: Value) -> Result<Value> {
+        self.prepare(input)?;
+        self.execute_all_nodes()?;
+        self.resolve_output()
+    }
+
+    fn prepare(&mut self, input: Value) -> Result<()> {
         if !self.graph.compiled {
             return Err(Error::GraphNotCompiled);
         }
 
-        self.outputs.clear(); // 保证每次 run() 都干净
-        let mut executed: HashSet<String> = HashSet::new();
+        self.outputs.clear();
+        self.queue.clear();
+        self.executed.clear();
+        self.pending_predecessors.clear();
 
-        let mut pending_predecessors: HashMap<String, usize> = HashMap::new();
         for id in self.graph.nodes.keys() {
             let preds = self.graph.predecessors.get(id).map_or(0, |s| s.len());
-            pending_predecessors.insert(id.clone(), preds);
+            self.pending_predecessors.insert(id.clone(), preds);
         }
 
-        let mut queue = VecDeque::new();
-        for (id, &count) in &pending_predecessors {
+        for (id, &count) in &self.pending_predecessors {
             if count == 0 {
-                queue.push_back(id.clone());
+                self.queue.push_back(id.clone());
                 self.outputs.insert(id.clone(), input.clone());
             }
         }
 
-        while let Some(current) = queue.pop_front() {
-            if executed.contains(&current) {
+        Ok(())
+    }
+
+    fn execute_all_nodes(&mut self) -> Result<()> {
+        while let Some(current) = self.queue.pop_front() {
+            if self.executed.contains(&current) {
                 continue;
             }
-            executed.insert(current.clone());
+            self.executed.insert(current.clone());
 
             let input_value = self.outputs.get(&current).cloned().unwrap_or(Value::Null);
             let node = self
@@ -66,17 +82,17 @@ impl<'a> Runner<'a> {
                     if !self.graph.nodes.contains_key(next_node_id) {
                         return Err(Error::NodeNotFound(next_node_id.to_string()));
                     }
-                    queue.push_back(next_node_id.to_string());
+                    self.queue.push_back(next_node_id.to_string());
                     self.outputs
                         .insert(next_node_id.to_string(), input_value.clone());
                 }
                 _ => {
                     if let Some(next_nodes) = self.graph.successors.get(&current) {
                         for next in next_nodes {
-                            if let Some(pending) = pending_predecessors.get_mut(next) {
+                            if let Some(pending) = self.pending_predecessors.get_mut(next) {
                                 *pending -= 1;
                                 if *pending == 0 {
-                                    queue.push_back(next.clone());
+                                    self.queue.push_back(next.clone());
                                 }
                             }
                         }
@@ -85,6 +101,10 @@ impl<'a> Runner<'a> {
             }
         }
 
+        Ok(())
+    }
+
+    fn resolve_output(&self) -> Result<Value> {
         let end_nodes: Vec<_> = self
             .graph
             .successors

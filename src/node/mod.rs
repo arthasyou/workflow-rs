@@ -3,10 +3,8 @@ pub mod branch;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{
-    error::{Error, Result},
-    types::Executable,
-};
+use self::branch::execute_branch;
+use crate::{error::Result, types::Executable};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NodeKind {
@@ -38,23 +36,7 @@ impl Executable for Node {
             }
             NodeKind::Model => Ok(Value::String(format!("Model output based on: {}", input))),
             NodeKind::Retriever => Ok(Value::String(format!("Retrieved info for: {}", input))),
-            NodeKind::Branch => {
-                if let Some(config) = &self.config {
-                    if let Some(branches) = config.get("branches").and_then(|v| v.as_object()) {
-                        if let Some(input_str) = input.as_str() {
-                            if let Some(target_node) = branches.get(input_str) {
-                                if let Some(target_str) = target_node.as_str() {
-                                    return Ok(Value::String(target_str.to_string()));
-                                }
-                            }
-                        }
-                    }
-                    if let Some(default) = config.get("default").and_then(|v| v.as_str()) {
-                        return Ok(Value::String(default.to_string()));
-                    }
-                }
-                Err(Error::BranchConfigMissing)
-            }
+            NodeKind::Branch => execute_branch(&self.config, &input),
         }
     }
 }
