@@ -1,4 +1,5 @@
 pub mod branch;
+pub mod builder;
 pub mod processor;
 
 use std::{
@@ -6,6 +7,7 @@ use std::{
     sync::Arc,
 };
 
+pub use builder::NodeBuilder;
 use processor::{InputProcessor, OutputProcessor};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
