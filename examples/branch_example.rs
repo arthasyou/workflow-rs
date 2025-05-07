@@ -19,6 +19,8 @@ fn main() {
             },
             "default": "fallback"
         })),
+        input_processor: None,
+        output_processor: None,
     });
 
     graph.add_node(Node {
@@ -27,6 +29,8 @@ fn main() {
         config: Some(json!({
             "template": "Accepted: {input}"
         })),
+        input_processor: None,
+        output_processor: None,
     });
 
     graph.add_node(Node {
@@ -35,6 +39,8 @@ fn main() {
         config: Some(json!({
             "template": "Rejected: {input}"
         })),
+        input_processor: None,
+        output_processor: None,
     });
 
     // graph.add_node(Node {
