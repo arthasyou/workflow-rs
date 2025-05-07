@@ -127,3 +127,62 @@ impl Graph {
         serde_json::from_str(json)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        graph::Graph,
+        node::{Node, NodeKind},
+        storage::{GraphStorage, mock::MockStorage},
+    };
+
+    #[test]
+    fn save_and_load_graph_mock_storage() {
+        let mut g = Graph::new();
+        g.add_node(Node {
+            id: "prompt".into(),
+            kind: NodeKind::Prompt,
+            config: None,
+        });
+        g.add_node(Node {
+            id: "model".into(),
+            kind: NodeKind::Model,
+            config: None,
+        });
+        let _ = g.add_edge("prompt", "model");
+
+        let storage = MockStorage::new();
+
+        storage
+            .save_graph("test_graph", &g)
+            .expect("Failed to save");
+
+        let loaded_graph = storage.load_graph("test_graph").expect("Failed to load");
+
+        assert_eq!(loaded_graph.nodes.len(), 2);
+        assert_eq!(loaded_graph.edges.len(), 1);
+
+        println!("Loaded Graph Nodes: {:?}", loaded_graph.nodes.keys());
+    }
+
+    #[test]
+    fn compile_builds_successors_and_predecessors() {
+        let mut g = Graph::new();
+        g.add_node(Node {
+            id: "a".into(),
+            kind: NodeKind::Prompt,
+            config: None,
+        });
+        g.add_node(Node {
+            id: "b".into(),
+            kind: NodeKind::Model,
+            config: None,
+        });
+        let _ = g.add_edge("a", "b");
+
+        g.compile().expect("Should compile");
+
+        assert_eq!(g.successors.get("a").unwrap().contains("b"), true);
+        assert_eq!(g.predecessors.get("b").unwrap().contains("a"), true);
+    }
+}
