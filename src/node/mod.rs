@@ -1,5 +1,6 @@
-pub mod branch;
 pub mod builder;
+pub mod components;
+pub mod config;
 pub mod processor;
 
 use std::{
@@ -8,11 +9,11 @@ use std::{
 };
 
 pub use builder::NodeBuilder;
+use components::{execute_aggregator, execute_branch, execute_transformer};
 use processor::{InputProcessor, OutputProcessor};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use self::branch::execute_branch;
 use crate::{error::Result, types::Executable};
 
 pub type InputProc<I> = Option<Arc<dyn InputProcessor<I>>>;
@@ -24,7 +25,9 @@ pub enum NodeKind {
     Model,
     Retriever,
     Branch,
-    // 以后可以加更多类型
+    Aggregator, // 新增类型，用于数据聚合
+    Transformer, /* 新增类型，用于数据转换
+                 * 以后可以加更多类型 */
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -76,6 +79,8 @@ impl Executable for Node {
                 Value::String(format!("Retrieved info for: {}", processed_input))
             }
             NodeKind::Branch => execute_branch(&self.config, &processed_input)?,
+            NodeKind::Aggregator => execute_aggregator(&self.config, &processed_input)?,
+            NodeKind::Transformer => execute_transformer(&self.config, &processed_input)?,
         };
 
         // 执行 OutputProcessor（如果存在）
