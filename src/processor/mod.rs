@@ -1,4 +1,4 @@
-pub mod processors;
+pub mod implementations;
 pub mod registry;
 pub mod traits;
 
