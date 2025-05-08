@@ -1,11 +1,11 @@
 pub mod builder;
-pub mod components;
 pub mod config;
+pub mod orchestration;
 
 use std::fmt::{Debug, Formatter};
 
 pub use builder::NodeBuilder;
-use components::{execute_aggregator, execute_branch, execute_transformer};
+use orchestration::{execute_aggregator, execute_branch, execute_transformer};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
