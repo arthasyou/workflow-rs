@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use serde_json::Value;
 
 use super::NodeBase;
@@ -8,16 +6,14 @@ use crate::{
     processor::{InputProc, OutputProc},
 };
 
-/// 泛型节点构建器，支持任意节点类型
-pub struct NodeBuilder<T> {
+pub struct NodeBuilder {
     id: String,
     input_processor: InputProc,
     output_processor: OutputProc,
     config: Option<Value>,
-    _marker: PhantomData<T>, // 用于指定节点类型
 }
 
-impl<T> NodeBuilder<T> {
+impl NodeBuilder {
     /// 创建新的 NodeBuilder
     pub fn new(id: &str) -> Self {
         Self {
@@ -25,70 +21,62 @@ impl<T> NodeBuilder<T> {
             input_processor: None,
             output_processor: None,
             config: None,
-            _marker: PhantomData,
         }
     }
 
-    /// 设置输入处理器
+    /// 设置 InputProcessor
     pub fn with_input_processor(mut self, processor: InputProc) -> Self {
         self.input_processor = processor;
         self
     }
 
-    /// 设置输出处理器
+    /// 设置 OutputProcessor
     pub fn with_output_processor(mut self, processor: OutputProc) -> Self {
         self.output_processor = processor;
         self
     }
 
-    /// 设置任意节点配置（通用）
-    pub fn with_config(mut self, config: Value) -> Self {
-        self.config = Some(config);
-        self
-    }
-
-    /// 设置特定节点配置（Prompt）
+    /// 设置 Prompt 节点配置
     pub fn with_prompt_config(mut self, config: PromptConfig) -> Self {
         self.config = Some(serde_json::to_value(config).unwrap());
         self
     }
 
-    /// 设置特定节点配置（Model）
+    /// 设置 Model 节点配置
     pub fn with_model_config(mut self, config: ModelConfig) -> Self {
         self.config = Some(serde_json::to_value(config).unwrap());
         self
     }
 
-    /// 设置特定节点配置（Branch）
+    /// 设置 Branch 节点配置
     pub fn with_branch_config(mut self, config: BranchConfig) -> Self {
         self.config = Some(serde_json::to_value(config).unwrap());
         self
     }
 
-    /// 设置特定节点配置（Aggregator）
+    /// 设置 Aggregator 节点配置
     pub fn with_aggregator_config(mut self, config: AggregatorConfig) -> Self {
         self.config = Some(serde_json::to_value(config).unwrap());
         self
     }
 
-    /// 设置特定节点配置（Transformer）
+    /// 设置 Transformer 节点配置
     pub fn with_transformer_config(mut self, config: TransformerConfig) -> Self {
         self.config = Some(serde_json::to_value(config).unwrap());
+
         self
     }
 
-    /// 构建节点
-    pub fn build(self) -> Result<NodeBase, String> {
-        if self.config.is_none() {
-            return Err("Configuration is missing".to_string());
-        }
+    // pub fn build(self) -> Result<NodeBase, String> {
+    //     if self.config.is_none() {
+    //         return Err("Configuration is missing".to_string());
+    //     }
 
-        Ok(NodeBase {
-            id: self.id,
-            state: Default::default(),
-            metadata: Default::default(),
-            input_processor_name: None,
-            output_processor_name: None,
-        })
-    }
+    //     Ok(NodeBase {
+    //         id: self.id,
+    //         config: self.config,
+    //         input_processor: self.input_processor,
+    //         output_processor: self.output_processor,
+    //     })
+    // }
 }

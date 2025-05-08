@@ -1,28 +1,24 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
     edge::Edge,
     error::{Error, Result},
-    node::Executable,
+    node::NodeBase,
 };
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Graph {
-    /// 节点存储：Key 为节点 ID，Value 为可执行节点
-    #[serde(skip)]
-    pub nodes: HashMap<String, Box<dyn Executable>>,
+    pub nodes: HashMap<String, NodeBase>,
     pub edges: Vec<Edge>,
     pub compiled: bool,
 
-    /// 前置节点与后继节点映射
-    pub predecessors: HashMap<String, HashSet<String>>,
-    pub successors: HashMap<String, HashSet<String>>,
+    pub predecessors: HashMap<String, HashSet<String>>, // 节点 -> 它的前置节点
+    pub successors: HashMap<String, HashSet<String>>,   // 节点 -> 它的后继节点
 }
 
 impl Graph {
-    /// 创建新的图结构
     pub fn new() -> Self {
         Self {
             nodes: HashMap::new(),
@@ -33,13 +29,10 @@ impl Graph {
         }
     }
 
-    /// 添加节点（节点类型需实现 Executable）
-    pub fn add_node<T: Executable + 'static>(&mut self, node: T) {
-        let id = node.get_base().id.clone();
-        self.nodes.insert(id.clone(), Box::new(node));
+    pub fn add_node(&mut self, node: NodeBase) {
+        self.nodes.insert(node.id.clone(), node);
     }
 
-    /// 添加边
     pub fn add_edge(&mut self, start: &str, end: &str) -> Result<()> {
         if !self.nodes.contains_key(start) {
             return Err(Error::NodeNotFound(start.to_string()));
@@ -56,15 +49,13 @@ impl Graph {
         Ok(())
     }
 
-    /// 编译图：检查循环依赖并构建前置/后继节点关系
     pub fn compile(&mut self) -> Result<()> {
         self.predecessors.clear();
         self.successors.clear();
 
         let mut in_degree: HashMap<String, usize> = HashMap::new();
-
-        for node_id in self.nodes.keys() {
-            in_degree.insert(node_id.clone(), 0);
+        for key in self.nodes.keys() {
+            in_degree.insert(key.clone(), 0);
         }
 
         for edge in &self.edges {
@@ -87,7 +78,7 @@ impl Graph {
             *in_degree.entry(edge.end.clone()).or_insert(0) += 1;
         }
 
-        // 拓扑排序检查循环依赖
+        use std::collections::VecDeque;
         let mut queue = VecDeque::new();
         for (node, &deg) in &in_degree {
             if deg == 0 {
@@ -96,15 +87,12 @@ impl Graph {
         }
 
         let mut visited_count = 0;
-
         while let Some(current) = queue.pop_front() {
             visited_count += 1;
-
             if let Some(children) = self.successors.get(&current) {
                 for child in children {
                     let deg = in_degree.get_mut(child).unwrap();
                     *deg -= 1;
-
                     if *deg == 0 {
                         queue.push_back(child.clone());
                     }
@@ -118,13 +106,12 @@ impl Graph {
             ));
         }
 
-        // 填充空节点
-        for node_id in self.nodes.keys() {
+        for id in self.nodes.keys() {
             self.successors
-                .entry(node_id.clone())
+                .entry(id.clone())
                 .or_insert_with(HashSet::new);
             self.predecessors
-                .entry(node_id.clone())
+                .entry(id.clone())
                 .or_insert_with(HashSet::new);
         }
 
@@ -132,16 +119,11 @@ impl Graph {
         Ok(())
     }
 
-    /// 序列化为 JSON 字符串
     pub fn to_json(&self) -> String {
-        serde_json::to_string_pretty(&self.edges).expect("Failed to serialize Graph")
+        serde_json::to_string_pretty(self).expect("Failed to serialize Graph")
     }
 
-    /// 从 JSON 字符串反序列化
-    pub fn from_json(json: &str) -> Result<Self> {
-        let edges: Vec<Edge> = serde_json::from_str(json)?;
-        let mut graph = Graph::new();
-        graph.edges = edges;
-        Ok(graph)
+    pub fn from_json(json: &str) -> std::result::Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
     }
 }

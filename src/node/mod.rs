@@ -2,88 +2,160 @@ pub mod builder;
 pub mod config;
 pub mod orchestration;
 
-use std::fmt::{Debug, Formatter};
+use std::{collections::HashMap, fmt::Debug};
 
 pub use builder::NodeBuilder;
-use orchestration::{execute_aggregator, execute_branch, execute_transformer};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use uuid::Uuid;
 
 use crate::{
     error::Result,
-    processor::{InputProc, OutputProc},
-    types::Executable,
+    processor::{InputProc, OutputProc, PROCESSOR_REGISTRY},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum NodeKind {
-    Prompt,
-    Model,
-    Retriever,
-    Branch,
-    Aggregator, // 新增类型，用于数据聚合
-    Transformer, /* 新增类型，用于数据转换
-                 * 以后可以加更多类型 */
+pub trait Executable: Send + Sync + Debug {
+    /// 获取 NodeBase 引用
+    fn get_base(&self) -> &NodeBase;
+
+    /// 输入处理逻辑，委托给 NodeBase
+    fn process_input(&self, input: Value) -> Result<Value> {
+        self.get_base().process_input(input)
+    }
+
+    /// 核心执行逻辑：各节点自行实现
+    fn core_execute(&self, input: Value) -> Result<Value>;
+
+    /// 输出处理逻辑，委托给 NodeBase
+    fn process_output(&self, output: Value) -> Result<Value> {
+        self.get_base().process_output(output)
+    }
+
+    /// 统一执行流程
+    fn execute(&self, input: Value) -> Result<Value> {
+        let processed_input = self.process_input(input)?;
+        let output = self.core_execute(processed_input)?;
+        self.process_output(output)
+    }
+
+    /// 克隆自身并返回 Box<dyn Executable>
+    fn clone_box(&self) -> Box<dyn Executable>;
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Node {
-    pub id: String,
-    pub kind: NodeKind,
-    pub config: Option<Value>,
-    #[serde(skip)] // 不参与序列化
-    pub input_processor: InputProc,
-    #[serde(skip)] // 不参与序列化
-    pub output_processor: OutputProc,
-}
-
-impl Debug for Node {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Node")
-            .field("id", &self.id)
-            .field("kind", &self.kind)
-            .field("config", &self.config)
-            .finish() // 不打印 input_processor 和 output_processor
+/// 实现 `Clone` Trait
+impl Clone for Box<dyn Executable> {
+    fn clone(&self) -> Box<dyn Executable> {
+        self.clone_box()
     }
 }
 
-impl Executable for Node {
-    fn execute(&self, input: Value) -> Result<Value> {
-        let mut processed_input = input.clone();
+/// 节点状态表示
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum NodeState {
+    Pending,
+    Running,
+    Completed,
+    Failed,
+    Cancelled,
+}
 
-        // 执行 InputProcessor（如果存在）
-        if let Some(input_proc) = &self.input_processor {
-            processed_input = input_proc.process(&self.id, &processed_input, None)?;
+impl Default for NodeState {
+    fn default() -> Self {
+        NodeState::Pending
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NodeBase {
+    pub id: String,
+    pub state: NodeState,                  // 节点状态
+    pub metadata: HashMap<String, String>, // 元数据字段
+    pub input_processor_name: Option<String>,
+    pub output_processor_name: Option<String>,
+}
+
+impl Default for NodeBase {
+    fn default() -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            state: NodeState::Pending,
+            metadata: HashMap::new(),
+            input_processor_name: None,
+            output_processor_name: None,
         }
+    }
+}
 
-        // 执行节点核心逻辑
-        let mut output = match self.kind {
-            NodeKind::Prompt => {
-                if let Some(cfg) = &self.config {
-                    if let Some(tpl) = cfg.get("template").and_then(|v| v.as_str()) {
-                        let filled = tpl.replace("{input}", processed_input.as_str().unwrap_or(""));
-                        Value::String(filled)
-                    } else {
-                        Value::String(format!("Prompted: {}", processed_input))
-                    }
-                } else {
-                    Value::String(format!("Prompted: {}", processed_input))
-                }
-            }
-            NodeKind::Model => Value::String(format!("Model output based on: {}", processed_input)),
-            NodeKind::Retriever => {
-                Value::String(format!("Retrieved info for: {}", processed_input))
-            }
-            NodeKind::Branch => execute_branch(&self.config, &processed_input)?,
-            NodeKind::Aggregator => execute_aggregator(&self.config, &processed_input)?,
-            NodeKind::Transformer => execute_transformer(&self.config, &processed_input)?,
-        };
-
-        // 执行 OutputProcessor（如果存在）
-        if let Some(output_proc) = &self.output_processor {
-            output = output_proc.process(&self.id, &output, None)?;
+impl NodeBase {
+    pub fn new(id: &str) -> Self {
+        Self {
+            id: id.to_string(),
+            input_processor_name: None,
+            output_processor_name: None,
+            state: NodeState::Pending,
+            metadata: HashMap::new(),
         }
+    }
 
+    /// 更新状态
+    pub fn set_state(&mut self, state: NodeState) {
+        self.state = state;
+    }
+
+    /// 设置元数据
+    pub fn set_metadata(&mut self, key: &str, value: &str) {
+        self.metadata.insert(key.to_string(), value.to_string());
+    }
+
+    /// 获取元数据
+    pub fn get_metadata(&self, key: &str) -> Option<&String> {
+        self.metadata.get(key)
+    }
+
+    // 设置 Processor 名称（而不是实例）
+    pub fn set_input_processor_name(&mut self, name: &str) {
+        self.input_processor_name = Some(name.to_string());
+    }
+
+    pub fn set_output_processor_name(&mut self, name: &str) {
+        self.output_processor_name = Some(name.to_string());
+    }
+
+    /// 动态获取输入处理器
+    pub fn get_input_processor(&self) -> InputProc {
+        if let Some(name) = &self.input_processor_name {
+            PROCESSOR_REGISTRY.get_input(name)
+        } else {
+            None
+        }
+    }
+
+    /// 动态获取输出处理器
+    pub fn get_output_processor(&self) -> OutputProc {
+        if let Some(name) = &self.output_processor_name {
+            PROCESSOR_REGISTRY.get_output(name)
+        } else {
+            None
+        }
+    }
+}
+
+impl NodeBase {
+    pub fn process_input(&self, input: Value) -> Result<Value> {
+        if let Some(name) = &self.input_processor_name {
+            if let Some(processor) = PROCESSOR_REGISTRY.get_input(name) {
+                return processor.process(&self.id, &input, None);
+            }
+        }
+        Ok(input)
+    }
+
+    pub fn process_output(&self, output: Value) -> Result<Value> {
+        if let Some(name) = &self.output_processor_name {
+            if let Some(processor) = PROCESSOR_REGISTRY.get_output(name) {
+                return processor.process(&self.id, &output, None);
+            }
+        }
         Ok(output)
     }
 }

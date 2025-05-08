@@ -1,69 +1,40 @@
-use serde_json::json;
-use workflow_rs::{
-    graph::Graph,
-    node::{Node, NodeKind},
-    runner::Runner,
-};
+// use std::collections::HashMap;
 
-fn main() {
-    // 1. 创建 Graph
-    let mut graph = Graph::new();
+// use serde_json::json;
+// use workflow_rs::{
+//     graph::Graph,
+//     node::{BranchNode, PromptNode},
+//     runner::Runner,
+// };
 
-    graph.add_node(Node {
-        id: "branch".to_string(),
-        kind: NodeKind::Branch,
-        config: Some(json!({
-            "branches": {
-                "yes": "accept",
-                "no": "reject"
-            },
-            "default": "fallback"
-        })),
-        input_processor: None,
-        output_processor: None,
-    });
+// fn main() {
+//     let mut graph = Graph::new();
 
-    graph.add_node(Node {
-        id: "accept".to_string(),
-        kind: NodeKind::Prompt,
-        config: Some(json!({
-            "template": "Accepted: {input}"
-        })),
-        input_processor: None,
-        output_processor: None,
-    });
+//     // 创建 BranchNode
+//     let mut branches = HashMap::new();
+//     branches.insert("yes".to_string(), "accept".to_string());
+//     branches.insert("no".to_string(), "reject".to_string());
 
-    graph.add_node(Node {
-        id: "reject".to_string(),
-        kind: NodeKind::Prompt,
-        config: Some(json!({
-            "template": "Rejected: {input}"
-        })),
-        input_processor: None,
-        output_processor: None,
-    });
+//     let branch_node = BranchNode::new("branch", branches, Some("fallback".to_string()));
+//     graph.add_node(branch_node);
 
-    // graph.add_node(Node {
-    //     id: "fallback".to_string(),
-    //     kind: NodeKind::Prompt,
-    //     config: Some(json!({
-    //         "template": "Fallback: {input}"
-    //     })),
-    // });
+//     // 创建 PromptNode
+//     let accept_node = PromptNode::new("accept", "Accepted: {input}");
+//     let reject_node = PromptNode::new("reject", "Rejected: {input}");
+//     let fallback_node = PromptNode::new("fallback", "Fallback: {input}");
 
-    // 注意：不需要 add_edge，Branch 自己控制流转！
+//     graph.add_node(accept_node);
+//     graph.add_node(reject_node);
+//     graph.add_node(fallback_node);
 
-    graph.compile().expect("Failed to compile graph");
+//     graph.compile().expect("Failed to compile graph");
 
-    // println!("Graph compiled successfully!");
-    // println!("Graph nodes: {:#?}", graph);
+//     for input_str in ["yes", "no", "maybe"] {
+//         let input = json!(input_str);
+//         let mut runner = Runner::new(&graph);
+//         let result = runner.run(input).expect("Run failed");
+//         println!("Input '{}' result: {}", input_str, result);
+//     }
+// }
 
-    // 2. 针对每个输入创建新的 Runner，确保环境干净
-    // for input_str in ["yes", "no", "maybe"] {
-    for input_str in ["yes"] {
-        let input = json!(input_str);
-        let mut runner = Runner::new(&graph); // 每次新的 Runner
-        let result = runner.run(input).expect("Run failed");
-        println!("Input '{}' result: {}", input_str, result);
-    }
-}
+fn main() {}
