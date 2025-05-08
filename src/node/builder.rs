@@ -1,13 +1,16 @@
 use serde_json::Value;
 
-use super::{InputProc, Node, NodeKind, OutputProc};
-use crate::node::config::*;
+use super::{Node, NodeKind};
+use crate::{
+    node::config::*,
+    processor::{InputProc, OutputProc},
+};
 
 pub struct NodeBuilder {
     id: String,
     kind: NodeKind,
-    input_processor: InputProc<Value>,
-    output_processor: OutputProc<Value>,
+    input_processor: InputProc,
+    output_processor: OutputProc,
     config: Option<Value>,
 }
 
@@ -24,13 +27,13 @@ impl NodeBuilder {
     }
 
     /// 设置 InputProcessor
-    pub fn with_input_processor(mut self, processor: InputProc<Value>) -> Self {
+    pub fn with_input_processor(mut self, processor: InputProc) -> Self {
         self.input_processor = processor;
         self
     }
 
     /// 设置 OutputProcessor
-    pub fn with_output_processor(mut self, processor: OutputProc<Value>) -> Self {
+    pub fn with_output_processor(mut self, processor: OutputProc) -> Self {
         self.output_processor = processor;
         self
     }

@@ -1,23 +1,19 @@
 pub mod builder;
 pub mod components;
 pub mod config;
-pub mod processor;
 
-use std::{
-    fmt::{Debug, Formatter},
-    sync::Arc,
-};
+use std::fmt::{Debug, Formatter};
 
 pub use builder::NodeBuilder;
 use components::{execute_aggregator, execute_branch, execute_transformer};
-use processor::{InputProcessor, OutputProcessor};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{error::Result, types::Executable};
-
-pub type InputProc<I> = Option<Arc<dyn InputProcessor<I>>>;
-pub type OutputProc<O> = Option<Arc<dyn OutputProcessor<O>>>;
+use crate::{
+    error::Result,
+    processor::{InputProc, OutputProc},
+    types::Executable,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NodeKind {
@@ -36,9 +32,9 @@ pub struct Node {
     pub kind: NodeKind,
     pub config: Option<Value>,
     #[serde(skip)] // 不参与序列化
-    pub input_processor: InputProc<Value>,
+    pub input_processor: InputProc,
     #[serde(skip)] // 不参与序列化
-    pub output_processor: OutputProc<Value>,
+    pub output_processor: OutputProc,
 }
 
 impl Debug for Node {
@@ -57,7 +53,7 @@ impl Executable for Node {
 
         // 执行 InputProcessor（如果存在）
         if let Some(input_proc) = &self.input_processor {
-            processed_input = input_proc.process_input(&self.id, &processed_input, None)?;
+            processed_input = input_proc.process(&self.id, &processed_input, None)?;
         }
 
         // 执行节点核心逻辑
@@ -85,7 +81,7 @@ impl Executable for Node {
 
         // 执行 OutputProcessor（如果存在）
         if let Some(output_proc) = &self.output_processor {
-            output = output_proc.process_output(&self.id, &output, None)?;
+            output = output_proc.process(&self.id, &output, None)?;
         }
 
         Ok(output)
