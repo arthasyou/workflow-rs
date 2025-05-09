@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use serde_json::Value;
-use workflow_macros::impl_executable;
+use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
+    model::NodeOutput,
     node::{Executable, NodeBase},
 };
 
@@ -31,22 +32,14 @@ impl Executable for BranchNode {
     fn core_execute(&self, input: Value) -> Result<Value> {
         let input_str = input.as_str().ok_or(Error::InvalidBranchInput)?;
 
-        if let Some(target) = self.branches.get(input_str) {
-            return Ok(Value::String(target.clone()));
-        }
+        let next_node_id = if let Some(target) = self.branches.get(input_str) {
+            target.clone()
+        } else if let Some(default) = &self.default {
+            default.clone()
+        } else {
+            return Err(Error::BranchConfigMissing);
+        };
 
-        if let Some(default) = &self.default {
-            return Ok(Value::String(default.clone()));
-        }
-
-        Err(Error::BranchConfigMissing)
+        Ok(serde_json::to_value(NodeOutput::new(&next_node_id, input))?)
     }
-
-    // fn get_base(&self) -> &NodeBase {
-    //     &self.base
-    // }
-
-    // fn clone_box(&self) -> Box<dyn Executable> {
-    //     Box::new(self.clone())
-    // }
 }

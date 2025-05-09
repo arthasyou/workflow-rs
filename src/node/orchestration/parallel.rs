@@ -1,62 +1,63 @@
-use std::{
-    sync::{Arc, Mutex},
-    thread,
+use serde_json::Value;
+use workflow_macro::impl_executable;
+
+use crate::{
+    error::Result,
+    node::{Executable, NodeBase},
 };
 
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-
-use crate::{error::Result, node::Executable};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct ParallelNode {
-    pub id: String,
-    pub target_node_ids: Vec<String>,
-    pub merge_strategy: String,
+    pub base: NodeBase,
+    pub child_ids: Vec<String>,
 }
 
 impl ParallelNode {
-    pub fn new(id: &str, target_node_ids: Vec<String>, merge_strategy: &str) -> Self {
+    pub fn new(id: &str, child_ids: Vec<String>) -> Self {
         Self {
-            id: id.to_string(),
-            target_node_ids,
-            merge_strategy: merge_strategy.to_string(),
+            base: NodeBase::new(id),
+            child_ids,
         }
     }
 }
 
+// #[impl_executable]
 // impl Executable for ParallelNode {
-//     fn execute(&self, input: Value) -> Result<Value> {
-//         println!("Starting ParallelNode [{}]", self.id);
+//     fn core_execute(&self, input: Value) -> Result<Value> {
+//         let mut results = Vec::new();
+//         let mut success_count = 0;
+//         let mut error_count = 0;
 
-//         let shared_output = Arc::new(Mutex::new(Vec::new()));
-
-//         let mut handles = Vec::new();
-
-//         for node_id in &self.target_node_ids {
-//             let output_clone = Arc::clone(&shared_output);
-//             let node_id_clone = node_id.clone();
-//             let input_clone = input.clone();
-
-//             let handle = thread::spawn(move || {
-//                 println!("Executing Node [{}] in parallel", node_id_clone);
-
-//                 // 模拟执行逻辑，简单拼接输出
-//                 let result = format!("Node [{}] executed", node_id_clone);
-
-//                 let mut output = output_clone.lock().unwrap();
-//                 output.push(result);
-//             });
-
-//             handles.push(handle);
+//         for child_id in &self.child_ids {
+//             // 这里假设通过全局方法获取节点实例
+//             if let Some(child_node) = crate::graph::get_node(child_id) {
+//                 match child_node.execute(input.clone()) {
+//                     Ok(output) => {
+//                         results.push(json!({"id": child_id, "output": output}));
+//                         success_count += 1;
+//                     }
+//                     Err(err) => {
+//                         results.push(json!({"id": child_id, "error": err.to_string()}));
+//                         error_count += 1;
+//                     }
+//                 }
+//             } else {
+//                 results.push(json!({"id": child_id, "error": "Node not found"}));
+//                 error_count += 1;
+//             }
 //         }
 
-//         for handle in handles {
-//             handle.join().unwrap();
-//         }
+//         let status = if error_count == 0 {
+//             "success"
+//         } else if success_count == 0 {
+//             "failed"
+//         } else {
+//             "partial_success"
+//         };
 
-//         let final_output = shared_output.lock().unwrap().join(", ");
-
-//         Ok(Value::String(final_output))
+//         Ok(json!({
+//             "status": status,
+//             "results": results
+//         }))
 //     }
 // }

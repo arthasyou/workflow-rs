@@ -1,19 +1,30 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    sync::Arc,
+};
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
     edge::Edge,
     error::{Error, Result},
+    model::{Context, graph_data::GraphData, node::Node},
     node::Executable,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Graph {
-    /// 节点存储：Key 为节点 ID，Value 为可执行节点
-    #[serde(skip)]
-    pub nodes: HashMap<String, Box<dyn Executable>>,
+    /// 节点数据：持久化存储，保存节点的静态配置信息
+    pub node_data: HashMap<String, Node>,
+
+    /// 边信息：节点之间的依赖关系
     pub edges: Vec<Edge>,
+
+    /// 运行时节点存储：用于执行的节点实例
+    #[serde(skip)]
+    pub nodes: HashMap<String, Arc<dyn Executable>>,
+
+    /// 编译状态
     pub compiled: bool,
 
     /// 前置节点与后继节点映射
@@ -25,6 +36,7 @@ impl Graph {
     /// 创建新的图结构
     pub fn new() -> Self {
         Self {
+            node_data: HashMap::new(),
             nodes: HashMap::new(),
             edges: Vec::new(),
             compiled: false,
@@ -33,10 +45,15 @@ impl Graph {
         }
     }
 
-    /// 添加节点（节点类型需实现 Executable）
+    /// 添加节点到持久化数据
+    pub fn add_node_data(&mut self, node: Node) {
+        self.node_data.insert(node.id.clone(), node);
+    }
+
+    /// 添加节点到运行时存储
     pub fn add_node<T: Executable + 'static>(&mut self, node: T) {
         let id = node.get_base().id.clone();
-        self.nodes.insert(id.clone(), Box::new(node));
+        self.nodes.insert(id, Arc::new(node));
     }
 
     /// 添加边
@@ -56,8 +73,42 @@ impl Graph {
         Ok(())
     }
 
+    /// 根据 node_data 初始化运行时节点
+    // pub fn initialize_nodes(&mut self) -> Result<()> {
+    //     for (id, node_data) in &self.node_data {
+    //         let node_instance: Arc<dyn Executable> = match &node_data.node_type {
+    //             crate::model::node::NodeType::Executable(exec_type) => match exec_type {
+    //                 crate::model::node::ExecutableNode::Prompt => {
+    //                     let prompt_node: crate::node::PromptNode =
+    //                         serde_json::from_value(node_data.data.clone())?;
+    //                     Arc::new(prompt_node)
+    //                 }
+    //             },
+    //             crate::model::node::NodeType::Orchestration(orch_type) => match orch_type {
+    //                 crate::model::node::OrchestrationNode::Branch => {
+    //                     let branch_node: crate::node::BranchNode =
+    //                         serde_json::from_value(node_data.data.clone())?;
+    //                     Arc::new(branch_node)
+    //                 }
+    //                 crate::model::node::OrchestrationNode::Parallel => {
+    //                     let parallel_node: crate::node::ParallelNode =
+    //                         serde_json::from_value(node_data.data.clone())?;
+    //                     Arc::new(parallel_node)
+    //                 }
+    //                 crate::model::node::OrchestrationNode::Repeat => {
+    //                     let repeat_node: crate::node::RepeatNode =
+    //                         serde_json::from_value(node_data.data.clone())?;
+    //                     Arc::new(repeat_node)
+    //                 }
+    //             },
+    //         };
+    //         self.nodes.insert(id.clone(), node_instance);
+    //     }
+    //     Ok(())
+    // }
+
     /// 编译图：检查循环依赖并构建前置/后继节点关系
-    pub fn compile(&mut self) -> Result<()> {
+    pub fn compile(&mut self) -> Result<Context> {
         self.predecessors.clear();
         self.successors.clear();
 
@@ -118,30 +169,26 @@ impl Graph {
             ));
         }
 
-        // 填充空节点
-        for node_id in self.nodes.keys() {
-            self.successors
-                .entry(node_id.clone())
-                .or_insert_with(HashSet::new);
-            self.predecessors
-                .entry(node_id.clone())
-                .or_insert_with(HashSet::new);
-        }
-
         self.compiled = true;
-        Ok(())
+        Ok(Context::new(&self.nodes))
     }
 
     /// 序列化为 JSON 字符串
     pub fn to_json(&self) -> String {
-        serde_json::to_string_pretty(&self.edges).expect("Failed to serialize Graph")
+        let graph_data = GraphData {
+            nodes: self.node_data.clone(),
+            edges: self.edges.clone(),
+        };
+        serde_json::to_string_pretty(&graph_data).expect("Failed to serialize Graph")
     }
 
     /// 从 JSON 字符串反序列化
     pub fn from_json(json: &str) -> Result<Self> {
-        let edges: Vec<Edge> = serde_json::from_str(json)?;
+        let graph_data: GraphData = serde_json::from_str(json)?;
         let mut graph = Graph::new();
-        graph.edges = edges;
+        graph.node_data = graph_data.nodes;
+        graph.edges = graph_data.edges;
+        // graph.initialize_nodes()?; // 根据节点数据重新初始化运行时节点
         Ok(graph)
     }
 }

@@ -468,11 +468,11 @@ dependencies = [
  "thiserror",
  "tokio",
  "uuid",
- "workflow_macros",
+ "workflow_macro",
 ]
 
 [[package]]
-name = "workflow_macros"
+name = "workflow_macro"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",

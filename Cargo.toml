@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = ["workflow_macros", "."]
+members = ["workflow_macro", "."]
 
 [dependencies]
 async-trait = "0.1"
@@ -14,4 +14,4 @@ thiserror = "2"
 tokio = { version = "1", features = ["full"] }
 once_cell = "1"
 uuid = { version = "1", features = ["v4"] }
-workflow_macros = { path = "./workflow_macros" }
+workflow_macro = { path = "./workflow_macro" }

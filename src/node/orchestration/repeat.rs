@@ -1,43 +1,31 @@
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use workflow_macro::impl_executable;
 
-use crate::{error::Result, node::Executable};
+use crate::{
+    error::Result,
+    node::{Executable, NodeBase},
+};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct RepeatNode {
-    pub id: String,
-    pub max_repeats: usize,
-    pub target_node_id: String,
+    pub base: NodeBase,
+    pub child_id: String,
+    pub max_iterations: usize,
 }
 
 impl RepeatNode {
-    pub fn new(id: &str, max_repeats: usize, target_node_id: &str) -> Self {
+    pub fn new(id: &str, child_id: &str, max_iterations: usize) -> Self {
         Self {
-            id: id.to_string(),
-            max_repeats,
-            target_node_id: target_node_id.to_string(),
+            base: NodeBase::new(id),
+            child_id: child_id.to_string(),
+            max_iterations,
         }
     }
 }
 
-// impl Executable for RepeatNode {
-//     fn execute(&self, input: Value) -> Result<Value> {
-//         let mut output = input.clone();
-//         let mut count = 0;
-
-//         println!("Starting RepeatNode [{}]", self.id);
-
-//         while count < self.max_repeats {
-//             println!("RepeatNode [{}] - Execution #{}", self.id, count + 1);
-
-//             // 模拟执行目标节点（这里简单返回处理次数）
-//             output = Value::String(format!("Executed {} times", count + 1));
-
-//             count += 1;
-//         }
-
-//         println!("RepeatNode [{}] completed", self.id);
-
-//         Ok(output)
-//     }
-// }
+#[impl_executable]
+impl Executable for RepeatNode {
+    fn core_execute(&self, _input: Value) -> Result<Value> {
+        Ok(Value::String("RepeatNode executed".to_string()))
+    }
+}
