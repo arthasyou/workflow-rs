@@ -50,7 +50,7 @@ impl NodeBase {
     pub async fn process_input(&self, input: Value) -> Result<Value> {
         if let Some(name) = &self.input_processor_name {
             if let Some(processor) = PROCESSOR_REGISTRY.get_input(name) {
-                return processor.process(&self.id, &input, None);
+                return processor.process(&self.id, &input, None).await;
             }
         }
         Ok(input)
@@ -59,7 +59,7 @@ impl NodeBase {
     pub async fn process_output(&self, output: Value) -> Result<Value> {
         if let Some(name) = &self.output_processor_name {
             if let Some(processor) = PROCESSOR_REGISTRY.get_output(name) {
-                return processor.process(&self.id, &output, None);
+                return processor.process(&self.id, &output, None).await;
             }
         }
         Ok(output)
