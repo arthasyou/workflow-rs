@@ -29,7 +29,7 @@ impl BranchNode {
 
 #[impl_executable]
 impl Executable for BranchNode {
-    fn core_execute(&self, input: Value) -> Result<Value> {
+    async fn core_execute(&self, input: Value) -> Result<Value> {
         let input_str = input.as_str().ok_or(Error::InvalidBranchInput)?;
 
         let next_node_id = if let Some(target) = self.branches.get(input_str) {

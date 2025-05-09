@@ -5,14 +5,14 @@ use serde_json::Value;
 use super::NodeBase;
 use crate::{
     node::config::*,
-    processor::{InputProc, OutputProc},
+    processor::{InputProcessor, OutputProcessor},
 };
 
 /// 泛型节点构建器，支持任意节点类型
 pub struct NodeBuilder<T> {
     id: String,
-    input_processor: InputProc,
-    output_processor: OutputProc,
+    input_processor: InputProcessor,
+    output_processor: OutputProcessor,
     config: Option<Value>,
     _marker: PhantomData<T>, // 用于指定节点类型
 }
@@ -30,13 +30,13 @@ impl<T> NodeBuilder<T> {
     }
 
     /// 设置输入处理器
-    pub fn with_input_processor(mut self, processor: InputProc) -> Self {
+    pub fn with_input_processor(mut self, processor: InputProcessor) -> Self {
         self.input_processor = processor;
         self
     }
 
     /// 设置输出处理器
-    pub fn with_output_processor(mut self, processor: OutputProc) -> Self {
+    pub fn with_output_processor(mut self, processor: OutputProcessor) -> Self {
         self.output_processor = processor;
         self
     }

@@ -27,9 +27,9 @@ impl<'a> Runner<'a> {
         }
     }
 
-    pub fn run(&mut self, input: Value) -> Result<Value> {
+    pub async fn run(&mut self, input: Value) -> Result<Value> {
         self.prepare(input)?;
-        self.execute_all_nodes()?;
+        self.execute_all_nodes().await?;
         self.resolve_output()
     }
 
@@ -61,7 +61,7 @@ impl<'a> Runner<'a> {
     }
 
     /// 执行所有节点
-    fn execute_all_nodes(&mut self) -> Result<()> {
+    async fn execute_all_nodes(&mut self) -> Result<()> {
         while let Some(current) = self.queue.pop_front() {
             if self.executed.contains(&current) {
                 continue;
@@ -78,7 +78,7 @@ impl<'a> Runner<'a> {
                 .ok_or_else(|| Error::NodeNotFound(current.clone()))?;
 
             // 执行节点并获取输出
-            let output = node.execute(input_value.clone())?;
+            let output = node.execute(input_value.clone()).await?;
             self.outputs.insert(current.clone(), output.clone());
 
             // 处理节点后继节点

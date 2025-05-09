@@ -5,12 +5,10 @@ use serde_json::Value;
 use crate::error::Result;
 
 /// 通用 Processor Trait
-pub trait ProcessorTrait<T> {
+pub trait Processor<T> {
     fn process(&self, node_id: &str, data: &T, context: Option<&Value>) -> Result<T>;
 }
 
 /// 输入和输出 Processor 类型
-pub type Processor<T> = Option<Arc<dyn ProcessorTrait<T> + Send + Sync>>;
-
-pub type InputProc = Processor<Value>;
-pub type OutputProc = Processor<Value>;
+pub type InputProcessor = Option<Arc<dyn Processor<Value> + Send + Sync>>;
+pub type OutputProcessor = Option<Arc<dyn Processor<Value> + Send + Sync>>;

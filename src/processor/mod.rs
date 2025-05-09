@@ -3,4 +3,4 @@ pub mod registry;
 pub mod traits;
 
 pub use registry::{PROCESSOR_REGISTRY, ProcessorRegistry, register_default_processors};
-pub use traits::{InputProc, OutputProc, Processor, ProcessorTrait};
+pub use traits::{InputProcessor, OutputProcessor, Processor};
