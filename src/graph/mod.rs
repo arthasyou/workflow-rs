@@ -9,7 +9,7 @@ use crate::{
     edge::Edge,
     error::{Error, Result},
     model::{Context, graph_data::GraphData, node::Node},
-    node::Executable,
+    node::{Executable, orchestration::branch::BranchNode, task::prompt::PromptNode},
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -73,39 +73,40 @@ impl Graph {
         Ok(())
     }
 
-    /// 根据 node_data 初始化运行时节点
-    // pub fn initialize_nodes(&mut self) -> Result<()> {
-    //     for (id, node_data) in &self.node_data {
-    //         let node_instance: Arc<dyn Executable> = match &node_data.node_type {
-    //             crate::model::node::NodeType::Executable(exec_type) => match exec_type {
-    //                 crate::model::node::ExecutableNode::Prompt => {
-    //                     let prompt_node: crate::node::PromptNode =
-    //                         serde_json::from_value(node_data.data.clone())?;
-    //                     Arc::new(prompt_node)
-    //                 }
-    //             },
-    //             crate::model::node::NodeType::Orchestration(orch_type) => match orch_type {
-    //                 crate::model::node::OrchestrationNode::Branch => {
-    //                     let branch_node: crate::node::BranchNode =
-    //                         serde_json::from_value(node_data.data.clone())?;
-    //                     Arc::new(branch_node)
-    //                 }
-    //                 crate::model::node::OrchestrationNode::Parallel => {
-    //                     let parallel_node: crate::node::ParallelNode =
-    //                         serde_json::from_value(node_data.data.clone())?;
-    //                     Arc::new(parallel_node)
-    //                 }
-    //                 crate::model::node::OrchestrationNode::Repeat => {
-    //                     let repeat_node: crate::node::RepeatNode =
-    //                         serde_json::from_value(node_data.data.clone())?;
-    //                     Arc::new(repeat_node)
-    //                 }
-    //             },
-    //         };
-    //         self.nodes.insert(id.clone(), node_instance);
-    //     }
-    //     Ok(())
-    // }
+    /// 初始化运行时节点
+    pub fn initialize_nodes(&mut self) -> Result<()> {
+        for (id, node_data) in &self.node_data {
+            let node_instance = self.create_node_instance(node_data)?;
+            self.nodes.insert(id.clone(), node_instance);
+        }
+        Ok(())
+    }
+
+    /// 创建节点实例，根据节点类型动态生成
+    fn create_node_instance(&self, node_data: &Node) -> Result<Arc<dyn Executable>> {
+        match &node_data.node_type {
+            crate::model::node::NodeType::Executable(exec_type) => match exec_type {
+                crate::model::node::ExecutableNode::Prompt => {
+                    let prompt_node: PromptNode = serde_json::from_value(node_data.data.clone())?;
+                    Ok(Arc::new(prompt_node))
+                }
+            },
+            crate::model::node::NodeType::Orchestration(orch_type) => match orch_type {
+                crate::model::node::OrchestrationNode::Branch => {
+                    let branch_node: BranchNode = serde_json::from_value(node_data.data.clone())?;
+                    Ok(Arc::new(branch_node))
+                }
+                crate::model::node::OrchestrationNode::Parallel => {
+                    // 预留：未实现
+                    todo!("ParallelNode not implemented yet");
+                }
+                crate::model::node::OrchestrationNode::Repeat => {
+                    // 预留：未实现
+                    todo!("RepeatNode not implemented yet");
+                }
+            },
+        }
+    }
 
     /// 编译图：检查循环依赖并构建前置/后继节点关系
     pub fn compile(&mut self) -> Result<Context> {
@@ -188,7 +189,7 @@ impl Graph {
         let mut graph = Graph::new();
         graph.node_data = graph_data.nodes;
         graph.edges = graph_data.edges;
-        // graph.initialize_nodes()?; // 根据节点数据重新初始化运行时节点
+        graph.initialize_nodes()?; // 根据节点数据重新初始化运行时节点
         Ok(graph)
     }
 }

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use workflow_macro::impl_executable;
 
@@ -9,7 +10,7 @@ use crate::{
     node::{Executable, NodeBase},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BranchNode {
     pub base: NodeBase,
     pub branches: HashMap<String, String>,
