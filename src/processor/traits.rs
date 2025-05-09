@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use serde_json::Value;
 
 use crate::error::Result;
 
-/// 通用 Processor Trait
+#[async_trait]
 pub trait Processor<T> {
-    fn process(&self, node_id: &str, data: &T, context: Option<&Value>) -> Result<T>;
+    async fn process(&self, node_id: &str, data: &T, context: Option<&Value>) -> Result<T>;
 }
 
 /// 输入和输出 Processor 类型
