@@ -31,8 +31,8 @@ pub enum Error {
     #[error("Invalid branch input.")]
     InvalidBranchInput,
 
-    #[error("Branch config missing.")]
-    BranchConfigMissing,
+    #[error("Node config missing.")]
+    NodeConfigMissing,
 
     #[error("Other system error: {0}")]
     SystemError(String),

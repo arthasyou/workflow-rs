@@ -6,7 +6,7 @@ use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
-    model::NodeOutput,
+    model::{NodeOutput, context::Context},
     node::{Executable, NodeBase},
 };
 
@@ -30,17 +30,29 @@ impl BranchNode {
 
 #[impl_executable]
 impl Executable for BranchNode {
-    async fn core_execute(&self, input: Value) -> Result<Value> {
+    async fn core_execute(&self, input: Value, context: &Context) -> Result<Value> {
         let input_str = input.as_str().ok_or(Error::InvalidBranchInput)?;
 
+        // 根据 input_str 找到下一个节点 ID
         let next_node_id = if let Some(target) = self.branches.get(input_str) {
             target.clone()
         } else if let Some(default) = &self.default {
             default.clone()
         } else {
-            return Err(Error::BranchConfigMissing);
+            return Err(Error::NodeConfigMissing);
         };
 
-        Ok(serde_json::to_value(NodeOutput::new(&next_node_id, input))?)
+        // 在 context 中查找下一个节点实例
+        let next_node = context
+            .get_node(&next_node_id)
+            .ok_or(Error::NodeNotFound(next_node_id.clone()))?;
+
+        // 执行下一个节点
+        let output = next_node.execute(input.clone(), context).await?;
+
+        Ok(serde_json::to_value(NodeOutput::new(
+            &next_node_id,
+            output,
+        ))?)
     }
 }

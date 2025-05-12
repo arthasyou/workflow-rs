@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet, VecDeque},
-    sync::Arc,
-};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +6,6 @@ use crate::{
     edge::Edge,
     error::{Error, Result},
     model::{Context, graph_data::GraphData, node::Node},
-    node::{Executable, orchestration::branch::BranchNode, task::prompt::PromptNode},
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -19,10 +15,6 @@ pub struct Graph {
 
     /// 边信息：节点之间的依赖关系
     pub edges: Vec<Edge>,
-
-    /// 运行时节点存储：用于执行的节点实例
-    #[serde(skip)]
-    pub nodes: HashMap<String, Arc<dyn Executable>>,
 
     /// 编译状态
     pub compiled: bool,
@@ -37,7 +29,6 @@ impl Graph {
     pub fn new() -> Self {
         Self {
             node_data: HashMap::new(),
-            nodes: HashMap::new(),
             edges: Vec::new(),
             compiled: false,
             predecessors: HashMap::new(),
@@ -50,18 +41,12 @@ impl Graph {
         self.node_data.insert(node.id.clone(), node);
     }
 
-    /// 添加节点到运行时存储
-    pub fn add_node<T: Executable + 'static>(&mut self, node: T) {
-        let id = node.get_base().id.clone();
-        self.nodes.insert(id, Arc::new(node));
-    }
-
     /// 添加边
     pub fn add_edge(&mut self, start: &str, end: &str) -> Result<()> {
-        if !self.nodes.contains_key(start) {
+        if !self.node_data.contains_key(start) {
             return Err(Error::NodeNotFound(start.to_string()));
         }
-        if !self.nodes.contains_key(end) {
+        if !self.node_data.contains_key(end) {
             return Err(Error::NodeNotFound(end.to_string()));
         }
 
@@ -73,41 +58,6 @@ impl Graph {
         Ok(())
     }
 
-    /// 初始化运行时节点
-    pub fn initialize_nodes(&mut self) -> Result<()> {
-        for (id, node_data) in &self.node_data {
-            let node_instance = self.create_node_instance(node_data)?;
-            self.nodes.insert(id.clone(), node_instance);
-        }
-        Ok(())
-    }
-
-    /// 创建节点实例，根据节点类型动态生成
-    fn create_node_instance(&self, node_data: &Node) -> Result<Arc<dyn Executable>> {
-        match &node_data.node_type {
-            crate::model::node::NodeType::Executable(exec_type) => match exec_type {
-                crate::model::node::ExecutableNode::Prompt => {
-                    let prompt_node: PromptNode = serde_json::from_value(node_data.data.clone())?;
-                    Ok(Arc::new(prompt_node))
-                }
-            },
-            crate::model::node::NodeType::Orchestration(orch_type) => match orch_type {
-                crate::model::node::OrchestrationNode::Branch => {
-                    let branch_node: BranchNode = serde_json::from_value(node_data.data.clone())?;
-                    Ok(Arc::new(branch_node))
-                }
-                crate::model::node::OrchestrationNode::Parallel => {
-                    // 预留：未实现
-                    todo!("ParallelNode not implemented yet");
-                }
-                crate::model::node::OrchestrationNode::Repeat => {
-                    // 预留：未实现
-                    todo!("RepeatNode not implemented yet");
-                }
-            },
-        }
-    }
-
     /// 编译图：检查循环依赖并构建前置/后继节点关系
     pub fn compile(&mut self) -> Result<Context> {
         self.predecessors.clear();
@@ -115,12 +65,13 @@ impl Graph {
 
         let mut in_degree: HashMap<String, usize> = HashMap::new();
 
-        for node_id in self.nodes.keys() {
+        for node_id in self.node_data.keys() {
             in_degree.insert(node_id.clone(), 0);
         }
 
         for edge in &self.edges {
-            if !self.nodes.contains_key(&edge.start) || !self.nodes.contains_key(&edge.end) {
+            if !self.node_data.contains_key(&edge.start) || !self.node_data.contains_key(&edge.end)
+            {
                 return Err(Error::ExecutionError(format!(
                     "Invalid edge from {} to {}",
                     edge.start, edge.end
@@ -164,14 +115,16 @@ impl Graph {
             }
         }
 
-        if visited_count != self.nodes.len() {
+        if visited_count != self.node_data.len() {
             return Err(Error::ExecutionError(
                 "Cycle detected in graph!".to_string(),
             ));
         }
 
         self.compiled = true;
-        Ok(Context::new(&self.nodes))
+
+        // 生成 Context（节点实例构建在 Context 内部处理）
+        Ok(Context::new(&self.node_data))
     }
 
     /// 序列化为 JSON 字符串
@@ -189,7 +142,6 @@ impl Graph {
         let mut graph = Graph::new();
         graph.node_data = graph_data.nodes;
         graph.edges = graph_data.edges;
-        graph.initialize_nodes()?; // 根据节点数据重新初始化运行时节点
         Ok(graph)
     }
 }

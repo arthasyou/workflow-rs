@@ -5,21 +5,21 @@ use serde_json::Value;
 use crate::{
     error::{Error, Result},
     graph::Graph,
-    // node::Executable,
+    model::Context,
 };
 
-pub struct Runner<'a> {
-    graph: &'a Graph,
-    outputs: HashMap<String, Value>,
+pub struct Runner {
+    inputs: HashMap<String, Vec<Value>>, // 每个节点的输入数据
+    outputs: HashMap<String, Value>,     // 每个节点的输出数据
     queue: VecDeque<String>,
     pending_predecessors: HashMap<String, usize>,
     executed: HashSet<String>,
 }
 
-impl<'a> Runner<'a> {
-    pub fn new(graph: &'a Graph) -> Self {
+impl Runner {
+    pub fn new() -> Self {
         Self {
-            graph,
+            inputs: HashMap::new(),
             outputs: HashMap::new(),
             queue: VecDeque::new(),
             pending_predecessors: HashMap::new(),
@@ -27,33 +27,52 @@ impl<'a> Runner<'a> {
         }
     }
 
-    pub async fn run(&mut self, input: Value) -> Result<Value> {
-        self.prepare(input)?;
-        self.execute_all_nodes().await?;
-        self.resolve_output()
+    /// 设置输入数据
+    pub fn set_input(&mut self, node_id: &str, input: Value) {
+        self.inputs
+            .entry(node_id.to_string())
+            .or_default()
+            .push(input);
     }
 
-    /// 初始化节点状态，计算前驱节点数量
-    fn prepare(&mut self, input: Value) -> Result<()> {
-        if !self.graph.compiled {
-            return Err(Error::GraphNotCompiled);
-        }
+    /// 获取输入数据
+    pub fn get_input(&self, node_id: &str) -> Value {
+        let inputs = self.inputs.get(node_id).cloned().unwrap_or_default();
+        Value::Array(inputs)
+    }
 
-        self.outputs.clear();
+    /// 设置输出数据
+    pub fn set_output(&mut self, node_id: &str, output: Value) {
+        self.outputs.insert(node_id.to_string(), output);
+    }
+
+    /// 获取输出数据
+    pub fn get_output(&self, node_id: &str) -> Option<&Value> {
+        self.outputs.get(node_id)
+    }
+
+    /// 运行图
+    pub async fn run(&mut self, graph: &Graph, context: &mut Context, input: Value) -> Result<()> {
+        self.prepare(graph, input)?;
+        self.execute_all_nodes(context).await
+    }
+
+    /// 初始化节点状态
+    fn prepare(&mut self, graph: &Graph, input: Value) -> Result<()> {
         self.queue.clear();
         self.executed.clear();
         self.pending_predecessors.clear();
+        self.inputs.clear();
+        self.outputs.clear();
 
-        for id in self.graph.nodes.keys() {
-            let pred_count = self.graph.predecessors.get(id).map_or(0, |s| s.len());
-            self.pending_predecessors.insert(id.clone(), pred_count);
-        }
+        for node_id in graph.node_data.keys() {
+            let pred_count = graph.predecessors.get(node_id).map_or(0, |s| s.len());
+            self.pending_predecessors
+                .insert(node_id.clone(), pred_count);
 
-        // 初始化队列
-        for (id, &count) in &self.pending_predecessors {
-            if count == 0 {
-                self.queue.push_back(id.clone());
-                self.outputs.insert(id.clone(), input.clone());
+            if pred_count == 0 {
+                self.queue.push_back(node_id.clone());
+                self.set_input(node_id, input.clone());
             }
         }
 
@@ -61,7 +80,7 @@ impl<'a> Runner<'a> {
     }
 
     /// 执行所有节点
-    async fn execute_all_nodes(&mut self) -> Result<()> {
+    async fn execute_all_nodes(&mut self, context: &mut Context) -> Result<()> {
         while let Some(current) = self.queue.pop_front() {
             if self.executed.contains(&current) {
                 continue;
@@ -69,19 +88,15 @@ impl<'a> Runner<'a> {
 
             self.executed.insert(current.clone());
 
-            let input_value = self.outputs.get(&current).cloned().unwrap_or(Value::Null);
+            let input_value = self.get_input(&current);
 
-            let node = self
-                .graph
-                .nodes
-                .get(&current)
+            let node = context
+                .get_node(&current)
                 .ok_or_else(|| Error::NodeNotFound(current.clone()))?;
 
-            // 执行节点并获取输出
-            let output = node.execute(input_value.clone()).await?;
-            self.outputs.insert(current.clone(), output.clone());
+            let output = node.execute(input_value, context).await?;
+            self.set_output(&current, output.clone());
 
-            // 处理节点后继节点
             self.process_successors(&current, output)?;
         }
 
@@ -89,51 +104,25 @@ impl<'a> Runner<'a> {
     }
 
     /// 处理节点的后继节点
-    fn process_successors(&mut self, current: &str, output: Value) -> Result<()> {
-        if let Some(successors) = self.graph.successors.get(current) {
-            for next_id in successors {
-                // 检查是否已经执行过
-                if self.executed.contains(next_id) {
-                    continue;
-                }
+    fn process_successors(&mut self, _current: &str, output: Value) -> Result<()> {
+        let next_ids: Vec<String> = self.pending_predecessors.keys().cloned().collect();
 
-                // 更新前驱节点数量
-                if let Some(pending) = self.pending_predecessors.get_mut(next_id) {
-                    *pending -= 1;
-
-                    // 前驱节点全部执行完毕，放入队列
-                    if *pending == 0 {
-                        self.queue.push_back(next_id.clone());
-                    }
-                }
-
-                // 将当前节点的输出传递给后继节点
-                self.outputs.insert(next_id.clone(), output.clone());
+        for next_id in next_ids {
+            if self.executed.contains(&next_id) {
+                continue;
             }
+
+            if let Some(pending) = self.pending_predecessors.get_mut(&next_id) {
+                *pending -= 1;
+
+                if *pending == 0 {
+                    self.queue.push_back(next_id.clone());
+                }
+            }
+
+            self.set_input(&next_id, output.clone());
         }
 
         Ok(())
-    }
-
-    /// 获取最终输出节点的结果
-    fn resolve_output(&self) -> Result<Value> {
-        let end_nodes: Vec<_> = self
-            .graph
-            .successors
-            .iter()
-            .filter(|(_, succs)| succs.is_empty())
-            .map(|(id, _)| id.clone())
-            .collect();
-
-        if end_nodes.is_empty() {
-            return Err(Error::NoEndNode);
-        }
-
-        let output = self
-            .outputs
-            .get(&end_nodes[0])
-            .cloned()
-            .unwrap_or(Value::Null);
-        Ok(output)
     }
 }

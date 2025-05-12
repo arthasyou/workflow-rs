@@ -1,9 +1,11 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
 use serde_json::Value;
 
-use super::NodeBase;
+use super::{Executable, NodeBase, orchestration::branch::BranchNode, task::prompt::PromptNode};
 use crate::{
+    error::{Error, Result},
+    model::node::{ExecutableNode, Node, NodeType, OrchestrationNode},
     node::config::*,
     processor::{InputProcessor, OutputProcessor},
 };
@@ -78,9 +80,9 @@ impl<T> NodeBuilder<T> {
     }
 
     /// 构建节点
-    pub fn build(self) -> Result<NodeBase, String> {
+    pub fn build(self) -> Result<NodeBase> {
         if self.config.is_none() {
-            return Err("Configuration is missing".to_string());
+            return Err(Error::NodeConfigMissing);
         }
 
         Ok(NodeBase {
@@ -90,5 +92,36 @@ impl<T> NodeBuilder<T> {
             input_processor_name: None,
             output_processor_name: None,
         })
+    }
+}
+
+/// 构建节点实例
+/// 输入：`Node` 数据结构
+/// 输出：运行时节点实例 `Arc<dyn Executable>`
+pub fn build_node(node: &Node) -> Result<Arc<dyn Executable>> {
+    let id = &node.id;
+    let data = node.data.clone();
+
+    match &node.node_type {
+        NodeType::Executable(exec_node) => match exec_node {
+            ExecutableNode::Prompt => {
+                // todo!("ParallelNode not implemented")
+                let node = PromptNode::new(id, data)?;
+                Ok(Arc::new(node))
+            }
+        },
+        NodeType::Orchestration(orch_node) => match orch_node {
+            OrchestrationNode::Branch => {
+                todo!("ParallelNode not implemented")
+                // let node = BranchNode::new(id, data);
+                // Ok(Arc::new(node))
+            }
+            OrchestrationNode::Parallel => {
+                todo!("ParallelNode not implemented")
+            }
+            OrchestrationNode::Repeat => {
+                todo!("RepeatNode not implemented")
+            }
+        },
     }
 }
