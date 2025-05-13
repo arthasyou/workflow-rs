@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use serde_json::json;
 use workflow_rs::{
     model::Context,
-    node::{Executable, NodeBase, orchestration::branch::BranchNode, task::prompt::PromptNode},
+    node::{Executable, orchestration::branch::BranchNode, task::prompt::PromptNode},
 };
 
 #[tokio::main]

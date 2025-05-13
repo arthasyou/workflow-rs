@@ -52,9 +52,11 @@ impl Runner {
     }
 
     /// 运行图
-    pub async fn run(&mut self, graph: &Graph, context: &mut Context, input: Value) -> Result<()> {
+    pub async fn run(&mut self, graph: &mut Graph, input: Value) -> Result<()> {
+        graph.compile()?;
+        let mut context = Context::from_graph(graph);
         self.prepare(graph, input)?;
-        self.execute_all_nodes(context).await
+        self.execute_all_nodes(&mut context).await
     }
 
     /// 初始化节点状态
@@ -96,31 +98,6 @@ impl Runner {
 
             let output = node.execute(input_value, context).await?;
             self.set_output(&current, output.clone());
-
-            self.process_successors(&current, output)?;
-        }
-
-        Ok(())
-    }
-
-    /// 处理节点的后继节点
-    fn process_successors(&mut self, _current: &str, output: Value) -> Result<()> {
-        let next_ids: Vec<String> = self.pending_predecessors.keys().cloned().collect();
-
-        for next_id in next_ids {
-            if self.executed.contains(&next_id) {
-                continue;
-            }
-
-            if let Some(pending) = self.pending_predecessors.get_mut(&next_id) {
-                *pending -= 1;
-
-                if *pending == 0 {
-                    self.queue.push_back(next_id.clone());
-                }
-            }
-
-            self.set_input(&next_id, output.clone());
         }
 
         Ok(())

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     edge::Edge,
     error::{Error, Result},
-    model::{Context, graph_data::GraphData, node::Node},
+    model::{graph_data::GraphData, node::Node},
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -59,7 +59,7 @@ impl Graph {
     }
 
     /// 编译图：检查循环依赖并构建前置/后继节点关系
-    pub fn compile(&mut self) -> Result<Context> {
+    pub fn compile(&mut self) -> Result<()> {
         self.predecessors.clear();
         self.successors.clear();
 
@@ -124,7 +124,7 @@ impl Graph {
         self.compiled = true;
 
         // 生成 Context（节点实例构建在 Context 内部处理）
-        Ok(Context::new(&self.node_data))
+        Ok(())
     }
 
     /// 序列化为 JSON 字符串

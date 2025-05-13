@@ -1,7 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
-use super::node::Node;
-use crate::node::{Executable, builder::build_node};
+use crate::{
+    graph::Graph,
+    node::{Executable, builder::build_node},
+};
 
 /// Context：运行时节点实例管理器
 #[derive(Debug, Clone)]
@@ -11,12 +13,11 @@ pub struct Context {
 }
 
 impl Context {
-    /// 根据 Graph 的 `node_data` 生成节点实例并存储到 Context
-    pub fn new(node_data: &HashMap<String, Node>) -> Self {
+    /// 根据 Graph 生成节点实例并存储到 Context
+    pub fn from_graph(graph: &Graph) -> Self {
         let mut nodes = HashMap::new();
 
-        for (id, node) in node_data {
-            // 根据 Node 数据生成节点实例
+        for (id, node) in &graph.node_data {
             if let Ok(instance) = build_node(node) {
                 nodes.insert(id.clone(), instance);
             }
