@@ -14,7 +14,7 @@ pub struct Context {
 
 impl Context {
     /// 根据 Graph 生成节点实例并存储到 Context
-    pub fn from_graph(graph: &Graph) -> Self {
+    pub fn from_graph(graph: &Graph) -> Arc<Self> {
         let mut nodes = HashMap::new();
 
         for (id, node) in &graph.node_data {
@@ -23,10 +23,10 @@ impl Context {
             }
         }
 
-        Self {
+        Arc::new(Self {
             nodes,
             metadata: HashMap::new(),
-        }
+        })
     }
 
     /// 获取节点实例

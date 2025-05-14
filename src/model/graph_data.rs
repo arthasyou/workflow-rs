@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use super::node::Node;
 use crate::edge::Edge;

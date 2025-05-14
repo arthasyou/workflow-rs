@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
-    model::context::Context,
+    model::{context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::PromptConfig},
 };
 
@@ -17,7 +19,7 @@ pub struct PromptNode {
 
 impl PromptNode {
     /// 构建 PromptNode 实例，强制要求 `template` 字段必须存在
-    pub fn new(id: &str, data: Value) -> Result<Self> {
+    pub fn new(id: &str, data: Value, processor: &DataProcessorMapping) -> Result<Self> {
         let config: PromptConfig = serde_json::from_value(data)
             .map_err(|_| Error::ExecutionError("Invalid data format for PromptNode".into()))?;
 
@@ -29,7 +31,7 @@ impl PromptNode {
         }
 
         Ok(Self {
-            base: NodeBase::new(id),
+            base: NodeBase::new(id, processor),
             template: config.template,
         })
     }
@@ -38,7 +40,7 @@ impl PromptNode {
 #[impl_executable]
 impl Executable for PromptNode {
     /// 核心执行逻辑
-    async fn core_execute(&self, _input: Value, _context: &Context) -> Result<Value> {
+    async fn core_execute(&self, _input: Value, _context: Arc<Context>) -> Result<Value> {
         let response = &self.template;
         Ok(Value::String(response.to_string()))
     }

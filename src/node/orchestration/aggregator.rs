@@ -1,42 +1,48 @@
-use serde_json::{Map, Value};
+use std::{collections::HashMap, sync::Arc};
 
-use crate::error::Result;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+use workflow_macro::impl_executable;
 
-/// 聚合节点处理逻辑
-pub fn execute_aggregator(config: &Option<Value>, input: &Value) -> Result<Value> {
-    if let Some(cfg) = config {
-        if let Some(sources) = cfg.get("sources").and_then(|v| v.as_array()) {
-            if let Some(method) = cfg.get("method").and_then(|v| v.as_str()) {
-                match method {
-                    "merge" => {
-                        let mut merged = Map::new();
-                        for source in sources {
-                            if let Some(key) = source.as_str() {
-                                if let Some(value) = input.get(key) {
-                                    merged.insert(key.to_string(), value.clone());
-                                }
-                            }
-                        }
-                        return Ok(Value::Object(merged));
-                    }
-                    "sum" => {
-                        let mut sum = 0;
-                        for source in sources {
-                            if let Some(key) = source.as_str() {
-                                if let Some(value) = input.get(key) {
-                                    if let Some(num) = value.as_i64() {
-                                        sum += num;
-                                    }
-                                }
-                            }
-                        }
-                        return Ok(Value::Number(sum.into()));
-                    }
-                    _ => return Ok(Value::String(format!("Unknown method: {}", method))),
-                }
-            }
-        }
+use crate::{
+    error::{Error, Result},
+    model::{context::Context, node::DataProcessorMapping},
+    node::{Executable, NodeBase, config::AggregatorConfig},
+};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AggregatorNode {
+    pub base: NodeBase,
+    pub branches: HashMap<String, String>, // key: 名称, value: 节点ID
+}
+
+impl AggregatorNode {
+    pub fn new(id: &str, data: Value, processor: &DataProcessorMapping) -> Result<Self> {
+        let config: AggregatorConfig = serde_json::from_value(data)
+            .map_err(|_| Error::ExecutionError("Invalid data format for AggregatorNode".into()))?;
+
+        Ok(Self {
+            base: NodeBase::new(id, processor),
+            branches: config.branches,
+        })
     }
+}
 
-    Ok(Value::String("Invalid Aggregator config".to_string()))
+#[impl_executable]
+impl Executable for AggregatorNode {
+    async fn core_execute(&self, _input: Value, context: Arc<Context>) -> Result<Value> {
+        let mut aggregated = serde_json::Map::new();
+
+        for (key, node_id) in &self.branches {
+            let node = context
+                .get_node(node_id)
+                .ok_or(Error::NodeNotFound(node_id.clone()))?
+                .clone();
+
+            let output = node.execute(json!(null), context.clone()).await?;
+            aggregated.insert(key.clone(), output);
+        }
+
+        Ok(Value::Object(aggregated))
+    }
 }

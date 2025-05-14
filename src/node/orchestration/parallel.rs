@@ -1,63 +1,75 @@
-use serde_json::Value;
+use std::{collections::HashMap, sync::Arc};
+
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+use tokio::task::JoinSet;
 use workflow_macro::impl_executable;
 
 use crate::{
-    error::Result,
-    node::{Executable, NodeBase},
+    error::{Error, Result},
+    model::{NodeOutput, context::Context, node::DataProcessorMapping},
+    node::{Executable, NodeBase, config::ParallelConfig},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParallelNode {
     pub base: NodeBase,
-    pub child_ids: Vec<String>,
+    pub branches: HashMap<String, String>, // key: 名称, value: 节点ID
 }
 
 impl ParallelNode {
-    pub fn new(id: &str, child_ids: Vec<String>) -> Self {
-        Self {
-            base: NodeBase::new(id),
-            child_ids,
-        }
+    pub fn new(id: &str, data: Value, processor: &DataProcessorMapping) -> Result<Self> {
+        let config: ParallelConfig = serde_json::from_value(data)
+            .map_err(|_| Error::ExecutionError("Invalid data format for ParallelNode".into()))?;
+
+        Ok(Self {
+            base: NodeBase::new(id, processor),
+            branches: config.branches,
+        })
     }
 }
 
-// #[impl_executable]
-// impl Executable for ParallelNode {
-//     fn core_execute(&self, input: Value) -> Result<Value> {
-//         let mut results = Vec::new();
-//         let mut success_count = 0;
-//         let mut error_count = 0;
+#[impl_executable]
+impl Executable for ParallelNode {
+    async fn core_execute(&self, input: Value, context: Arc<Context>) -> Result<Value> {
+        let mut set = JoinSet::new();
 
-//         for child_id in &self.child_ids {
-//             // 这里假设通过全局方法获取节点实例
-//             if let Some(child_node) = crate::graph::get_node(child_id) {
-//                 match child_node.execute(input.clone()) {
-//                     Ok(output) => {
-//                         results.push(json!({"id": child_id, "output": output}));
-//                         success_count += 1;
-//                     }
-//                     Err(err) => {
-//                         results.push(json!({"id": child_id, "error": err.to_string()}));
-//                         error_count += 1;
-//                     }
-//                 }
-//             } else {
-//                 results.push(json!({"id": child_id, "error": "Node not found"}));
-//                 error_count += 1;
-//             }
-//         }
+        for (key, node_id) in &self.branches {
+            let node = context
+                .get_node(node_id)
+                .ok_or(Error::NodeNotFound(node_id.clone()))?
+                .clone();
 
-//         let status = if error_count == 0 {
-//             "success"
-//         } else if success_count == 0 {
-//             "failed"
-//         } else {
-//             "partial_success"
-//         };
+            let input_clone = input.clone();
+            let context_clone = context.clone();
+            let key = key.clone();
+            let node_id = node_id.clone();
 
-//         Ok(json!({
-//             "status": status,
-//             "results": results
-//         }))
-//     }
-// }
+            // 使用独立的 spawn_task 方法启动任务
+            set.spawn(spawn_task(node_id, key, node, input_clone, context_clone));
+        }
+
+        let mut output_map = serde_json::Map::new();
+        while let Some(res) = set.join_next().await {
+            if let Ok((key, output)) = res? {
+                output_map.insert(key, json!(output));
+            }
+        }
+
+        Ok(Value::Object(output_map))
+    }
+}
+
+/// 启动并发任务，执行每个子节点
+fn spawn_task(
+    node_id: String,
+    key: String,
+    node: Arc<dyn Executable>,
+    input: Value,
+    context: Arc<Context>,
+) -> impl std::future::Future<Output = Result<(String, NodeOutput)>> {
+    async move {
+        let result = node.execute(input, context).await;
+        result.map(|value| (key, NodeOutput::new(&node_id, value)))
+    }
+}

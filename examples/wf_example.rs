@@ -2,7 +2,7 @@ use serde_json::json;
 use workflow_rs::{
     Workflow,
     graph::Graph,
-    model::node::{ExecutableNode, Node, NodeType},
+    model::node::{DataProcessorMapping, ExecutableNode, Node, NodeType},
 };
 
 #[tokio::main]
@@ -12,11 +12,13 @@ async fn main() {
         "node1",
         NodeType::Executable(ExecutableNode::Prompt),
         json!({"template": "Node 1 executed"}),
+        DataProcessorMapping::default(),
     );
     let node2 = Node::new(
         "node2",
         NodeType::Executable(ExecutableNode::Prompt),
         json!({"template": "Node 2 executed"}),
+        DataProcessorMapping::default(),
     );
 
     // 构建 Graph

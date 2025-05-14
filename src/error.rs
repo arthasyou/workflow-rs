@@ -34,6 +34,9 @@ pub enum Error {
     #[error("Node config missing.")]
     NodeConfigMissing,
 
+    #[error("Join task error: {0}")]
+    JoinError(#[from] tokio::task::JoinError),
+
     #[error("Other system error: {0}")]
     SystemError(String),
 }

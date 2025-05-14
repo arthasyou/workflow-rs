@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
 use serde_json::Value;
 use workflow_macro::impl_executable;
 
 use crate::{
-    error::Result,
-    node::{Executable, NodeBase},
+    error::{Error, Result},
+    model::{context::Context, node::DataProcessorMapping},
+    node::{Executable, NodeBase, config::RepeatConfig},
 };
 
 #[derive(Debug, Clone)]
@@ -14,18 +17,33 @@ pub struct RepeatNode {
 }
 
 impl RepeatNode {
-    pub fn new(id: &str, child_id: &str, max_iterations: usize) -> Self {
-        Self {
-            base: NodeBase::new(id),
-            child_id: child_id.to_string(),
-            max_iterations,
-        }
+    pub fn new(id: &str, data: Value, processor: &DataProcessorMapping) -> Result<Self> {
+        let config: RepeatConfig = serde_json::from_value(data)
+            .map_err(|_| Error::ExecutionError("Invalid data format for RepeatNode".into()))?;
+
+        Ok(Self {
+            base: NodeBase::new(id, processor),
+            child_id: config.child_id,
+            max_iterations: config.max_iterations,
+        })
     }
 }
 
-// #[impl_executable]
-// impl Executable for RepeatNode {
-//     fn core_execute(&self, _input: Value) -> Result<Value> {
-//         Ok(Value::String("RepeatNode executed".to_string()))
-//     }
-// }
+#[impl_executable]
+impl Executable for RepeatNode {
+    async fn core_execute(&self, input: Value, context: Arc<Context>) -> Result<Value> {
+        let mut current_input = input;
+
+        for _ in 0 .. self.max_iterations {
+            let child_node = context
+                .get_node(&self.child_id)
+                .ok_or_else(|| Error::NodeNotFound(self.child_id.clone()))?;
+
+            current_input = child_node
+                .execute(current_input.clone(), context.clone())
+                .await?;
+        }
+
+        Ok(current_input)
+    }
+}

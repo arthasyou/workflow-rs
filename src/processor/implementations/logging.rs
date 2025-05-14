@@ -8,13 +8,8 @@ pub struct LoggingProcessor;
 
 #[async_trait]
 impl Processor<Value> for LoggingProcessor {
-    async fn process(
-        &self,
-        node_id: &str,
-        data: &Value,
-        _context: Option<&Value>,
-    ) -> Result<Value> {
-        println!("Node [{}] - Logging Input: {:?}", node_id, data);
+    async fn process(&self, data: &Value) -> Result<Value> {
+        println!("Logging Input: {:?}", data);
         Ok(data.clone())
     }
 }

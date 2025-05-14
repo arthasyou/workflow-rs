@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    sync::Arc,
+};
 
 use serde_json::Value;
 
@@ -54,9 +57,9 @@ impl Runner {
     /// 运行图
     pub async fn run(&mut self, graph: &mut Graph, input: Value) -> Result<()> {
         graph.compile()?;
-        let mut context = Context::from_graph(graph);
+        let context = Context::from_graph(graph);
         self.prepare(graph, input)?;
-        self.execute_all_nodes(&mut context).await
+        self.execute_all_nodes(context).await
     }
 
     /// 初始化节点状态
@@ -82,7 +85,7 @@ impl Runner {
     }
 
     /// 执行所有节点
-    async fn execute_all_nodes(&mut self, context: &mut Context) -> Result<()> {
+    async fn execute_all_nodes(&mut self, context: Arc<Context>) -> Result<()> {
         while let Some(current) = self.queue.pop_front() {
             if self.executed.contains(&current) {
                 continue;
@@ -96,7 +99,7 @@ impl Runner {
                 .get_node(&current)
                 .ok_or_else(|| Error::NodeNotFound(current.clone()))?;
 
-            let output = node.execute(input_value, context).await?;
+            let output = node.execute(input_value, context.clone()).await?;
             self.set_output(&current, output.clone());
         }
 

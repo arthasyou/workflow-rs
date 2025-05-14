@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     error::Result,
+    model::node::DataProcessorMapping,
     processor::{InputProcessor, OutputProcessor, PROCESSOR_REGISTRY},
 };
 
@@ -50,7 +51,7 @@ impl NodeBase {
     pub async fn process_input(&self, input: Value) -> Result<Value> {
         if let Some(name) = &self.input_processor_name {
             if let Some(processor) = PROCESSOR_REGISTRY.get_input(name) {
-                return processor.process(&self.id, &input, None).await;
+                return processor.process(&input).await;
             }
         }
         Ok(input)
@@ -59,7 +60,7 @@ impl NodeBase {
     pub async fn process_output(&self, output: Value) -> Result<Value> {
         if let Some(name) = &self.output_processor_name {
             if let Some(processor) = PROCESSOR_REGISTRY.get_output(name) {
-                return processor.process(&self.id, &output, None).await;
+                return processor.process(&output).await;
             }
         }
         Ok(output)
@@ -67,11 +68,11 @@ impl NodeBase {
 }
 
 impl NodeBase {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: &str, processor: &DataProcessorMapping) -> Self {
         Self {
             id: id.to_string(),
-            input_processor_name: None,
-            output_processor_name: None,
+            input_processor_name: processor.input.to_owned(),
+            output_processor_name: processor.output.to_owned(),
             state: NodeState::Pending,
             metadata: HashMap::new(),
         }

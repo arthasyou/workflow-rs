@@ -5,6 +5,7 @@ pub mod repeat;
 pub mod subgraph;
 pub mod transformer;
 
+pub use aggregator::AggregatorNode;
 pub use parallel::ParallelNode;
 pub use repeat::RepeatNode;
 pub use subgraph::SubGraphNode;

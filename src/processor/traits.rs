@@ -7,7 +7,7 @@ use crate::error::Result;
 
 #[async_trait]
 pub trait Processor<T> {
-    async fn process(&self, node_id: &str, data: &T, context: Option<&Value>) -> Result<T>;
+    async fn process(&self, data: &T) -> Result<T>;
 }
 
 /// 输入和输出 Processor 类型
