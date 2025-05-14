@@ -4,7 +4,7 @@ use serde_json::json;
 use workflow_rs::{
     model::{Context, node::DataProcessorMapping},
     node::{
-        Executable, config::ParallelConfig, orchestration::ParallelNode, task::prompt::PromptNode,
+        Executable, config::ParallelConfig, control::ParallelNode, data::prompt::PromptNode,
     },
 };
 

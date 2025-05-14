@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::{Executable, task::PromptNode};
+use super::{Executable, data::PromptNode};
 use crate::{
     error::Result,
     model::node::{ExecutableNode, Node, NodeType, OrchestrationNode},
