@@ -57,4 +57,9 @@ impl Node {
             processors,
         }
     }
+
+    /// 判断节点是否为控制节点 (Orchestration Node)
+    pub fn is_control_node(&self) -> bool {
+        matches!(self.node_type, NodeType::Orchestration(_))
+    }
 }

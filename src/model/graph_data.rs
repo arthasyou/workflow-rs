@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use super::node::Node;
-use crate::edge::Edge;
+use crate::edge::{Edge, EdgeType};
 
 /// 持久化使用的 Graph 数据结构
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,10 +29,11 @@ impl GraphData {
     }
 
     /// 添加边信息
-    pub fn add_edge(&mut self, start: &str, end: &str) {
+    pub fn add_edge(&mut self, start: &str, end: &str, edge_type: EdgeType) {
         self.edges.push(Edge {
             start: start.to_string(),
             end: end.to_string(),
+            edge_type,
         });
     }
 }

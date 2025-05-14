@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    edge::{Edge, EdgeType},
+    edge::Edge,
     error::{Error, Result},
     model::{graph_data::GraphData, node::Node},
 };
@@ -41,7 +41,7 @@ impl Graph {
         self.node_data.insert(node.id.clone(), node);
     }
 
-    /// 添加边，自动推断 edge_type
+    /// 添加边
     pub fn add_edge(&mut self, start: &str, end: &str) -> Result<()> {
         if !self.node_data.contains_key(start) {
             return Err(Error::NodeNotFound(start.to_string()));
@@ -50,20 +50,9 @@ impl Graph {
             return Err(Error::NodeNotFound(end.to_string()));
         }
 
-        let start_node = self.node_data.get(start).unwrap();
-        let end_node = self.node_data.get(end).unwrap();
-
-        // 根据起始节点类型推断 edge_type
-        let edge_type = if start_node.is_control_node() {
-            EdgeType::Control
-        } else {
-            EdgeType::Data
-        };
-
         self.edges.push(Edge {
             start: start.to_string(),
             end: end.to_string(),
-            edge_type,
         });
 
         Ok(())
@@ -89,22 +78,10 @@ impl Graph {
                 )));
             }
 
-            // 根据 EdgeType 区分处理
-            match edge.edge_type {
-                EdgeType::Data => {
-                    self.successors
-                        .entry(edge.start.clone())
-                        .or_default()
-                        .insert(edge.end.clone());
-                }
-                EdgeType::Control => {
-                    self.successors
-                        .entry(edge.start.clone())
-                        .or_default()
-                        .insert(edge.end.clone());
-                }
-            }
-
+            self.successors
+                .entry(edge.start.clone())
+                .or_default()
+                .insert(edge.end.clone());
             self.predecessors
                 .entry(edge.end.clone())
                 .or_default()
@@ -145,6 +122,8 @@ impl Graph {
         }
 
         self.compiled = true;
+
+        // 生成 Context（节点实例构建在 Context 内部处理）
         Ok(())
     }
 
