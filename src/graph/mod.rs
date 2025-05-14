@@ -53,10 +53,17 @@ impl Graph {
         let start_node = self.node_data.get(start).unwrap();
         let end_node = self.node_data.get(end).unwrap();
 
-        // 根据起始节点类型推断 edge_type
         let edge_type = if start_node.is_control_node() {
+            // 控制节点出口，只能连接到数据节点
+            if end_node.is_control_node() {
+                return Err(Error::ExecutionError(format!(
+                    "Control node '{}' cannot connect to another control node '{}'",
+                    start, end
+                )));
+            }
             EdgeType::Control
         } else {
+            // 数据节点出口，可以连接到控制节点或数据节点
             EdgeType::Data
         };
 
