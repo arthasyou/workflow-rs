@@ -35,8 +35,3 @@ pub struct RepeatConfig {
     pub child_id: String,
     pub max_iterations: usize,
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TransformerConfig {
-    pub transformation: String,
-}
