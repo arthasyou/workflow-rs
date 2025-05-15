@@ -3,7 +3,7 @@ use std::sync::Arc;
 use super::{Executable, data::PromptNode};
 use crate::{
     error::Result,
-    model::node::{ExecutableNode, Node, NodeType, OrchestrationNode},
+    model::node::{ControlNode, DataNode, Node, NodeType},
 };
 
 /// 构建节点实例
@@ -15,18 +15,18 @@ pub fn build_node(node: &Node) -> Result<Arc<dyn Executable>> {
     let processors = &node.processors;
 
     let executable: Box<dyn Executable> = match &node.node_type {
-        NodeType::Executable(exec_node) => match exec_node {
-            ExecutableNode::Prompt => Box::new(PromptNode::new(id, data, processors)?),
+        NodeType::Data(exec_node) => match exec_node {
+            DataNode::Prompt => Box::new(PromptNode::new(id, data, processors)?),
         },
-        NodeType::Orchestration(orch_node) => match orch_node {
-            OrchestrationNode::Branch => {
+        NodeType::Control(orch_node) => match orch_node {
+            ControlNode::Branch => {
                 todo!("BranchNode not implemented")
                 // Box::new(BranchNode::new(id, data, processors)?)
             }
-            OrchestrationNode::Parallel => {
+            ControlNode::Parallel => {
                 todo!("ParallelNode not implemented")
             }
-            OrchestrationNode::Repeat => {
+            ControlNode::Repeat => {
                 todo!("RepeatNode not implemented")
             }
         },

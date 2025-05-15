@@ -3,17 +3,17 @@ use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NodeType {
-    Executable(ExecutableNode),
-    Orchestration(OrchestrationNode),
+    Data(DataNode),
+    Control(ControlNode),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ExecutableNode {
+pub enum DataNode {
     Prompt,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum OrchestrationNode {
+pub enum ControlNode {
     Branch,
     Parallel,
     Repeat,
@@ -41,6 +41,9 @@ pub struct Node {
     pub node_type: NodeType,
     pub data: Value,
     pub processors: DataProcessorMapping,
+
+    /// 输入数据 ID，可选
+    pub input_id: Option<String>,
 }
 
 impl Node {
@@ -49,17 +52,19 @@ impl Node {
         node_type: NodeType,
         data: Value,
         processors: DataProcessorMapping,
+        input_id: Option<String>,
     ) -> Self {
         Self {
             id: id.to_string(),
             node_type,
             data,
             processors,
+            input_id,
         }
     }
 
     /// 判断节点是否为控制节点 (Orchestration Node)
     pub fn is_control_node(&self) -> bool {
-        matches!(self.node_type, NodeType::Orchestration(_))
+        matches!(self.node_type, NodeType::Control(_))
     }
 }
