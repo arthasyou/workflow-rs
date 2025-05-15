@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     error::Result,
-    model::node::DataProcessorMapping,
+    model::{DataPayload, node::DataProcessorMapping},
     processor::{InputProcessor, OutputProcessor, PROCESSOR_REGISTRY},
 };
 
@@ -48,7 +48,7 @@ impl Default for NodeBase {
 }
 
 impl NodeBase {
-    pub async fn process_input(&self, input: Value) -> Result<Value> {
+    pub async fn process_input(&self, input: DataPayload) -> Result<DataPayload> {
         if let Some(name) = &self.input_processor_name {
             if let Some(processor) = PROCESSOR_REGISTRY.get_input(name) {
                 return processor.process(&input).await;
@@ -57,7 +57,7 @@ impl NodeBase {
         Ok(input)
     }
 
-    pub async fn process_output(&self, output: Value) -> Result<Value> {
+    pub async fn process_output(&self, output: DataPayload) -> Result<DataPayload> {
         if let Some(name) = &self.output_processor_name {
             if let Some(processor) = PROCESSOR_REGISTRY.get_output(name) {
                 return processor.process(&output).await;

@@ -6,7 +6,7 @@ use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
-    model::{NodeOutput, context::Context, node::DataProcessorMapping},
+    model::{DataPayload, NodeOutput, context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::BranchConfig},
 };
 
@@ -32,7 +32,7 @@ impl BranchNode {
 
 #[impl_executable]
 impl Executable for BranchNode {
-    async fn core_execute(&self, input: Value, context: Arc<Context>) -> Result<Value> {
+    async fn core_execute(&self, input: DataPayload, context: Arc<Context>) -> Result<Value> {
         let input_str = input.as_str().ok_or(Error::InvalidBranchInput)?;
 
         // 根据 input_str 找到下一个节点 ID

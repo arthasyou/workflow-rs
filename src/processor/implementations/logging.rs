@@ -1,14 +1,13 @@
 use async_trait::async_trait;
-use serde_json::Value;
 
-use crate::{error::Result, processor::Processor};
+use crate::{error::Result, model::DataPayload, processor::Processor};
 
 /// LoggingProcessor 示例
 pub struct LoggingProcessor;
 
 #[async_trait]
-impl Processor<Value> for LoggingProcessor {
-    async fn process(&self, data: &Value) -> Result<Value> {
+impl Processor<DataPayload> for LoggingProcessor {
+    async fn process(&self, data: &DataPayload) -> Result<DataPayload> {
         println!("Logging Input: {:?}", data);
         Ok(data.clone())
     }
