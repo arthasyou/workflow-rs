@@ -5,7 +5,7 @@ use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
-    model::{context::Context, node::DataProcessorMapping},
+    model::{DataPayload, context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::RepeatConfig},
 };
 
@@ -31,7 +31,7 @@ impl RepeatNode {
 
 #[impl_executable]
 impl Executable for RepeatNode {
-    async fn core_execute(&self, input: Value, context: Arc<Context>) -> Result<Value> {
+    async fn core_execute(&self, input: DataPayload, context: Arc<Context>) -> Result<OutputData> {
         let mut current_input = input;
 
         for _ in 0 .. self.max_iterations {

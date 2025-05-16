@@ -17,7 +17,7 @@ impl Context {
     pub fn from_graph(graph: &Graph) -> Arc<Self> {
         let mut nodes = HashMap::new();
 
-        for (id, node) in &graph.node_data {
+        for (id, node) in &graph.nodes {
             if let Ok(instance) = build_node(node) {
                 nodes.insert(id.clone(), instance);
             }

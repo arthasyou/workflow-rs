@@ -11,10 +11,14 @@ use crate::{
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Graph {
     /// 节点数据：持久化存储，保存节点的静态配置信息
-    pub node_data: HashMap<String, Node>,
+    pub nodes: HashMap<String, Node>,
 
     /// 边信息：节点之间的依赖关系
     pub edges: Vec<Edge>,
+
+    /// 起始节点和结束节点（虚拟节点，不计入 node_data）
+    pub start_node: Option<String>,
+    pub end_node: Option<String>,
 
     /// 编译状态
     pub compiled: bool,
@@ -28,30 +32,110 @@ impl Graph {
     /// 创建新的图结构
     pub fn new() -> Self {
         Self {
-            node_data: HashMap::new(),
+            nodes: HashMap::new(),
             edges: Vec::new(),
+            start_node: None,
+            end_node: None,
             compiled: false,
             predecessors: HashMap::new(),
             successors: HashMap::new(),
         }
     }
 
+    fn mark_uncompiled(&mut self) {
+        self.compiled = false;
+    }
+
+    pub fn set_start_node(&mut self, node: Node) -> Result<()> {
+        if self.start_node.is_some() {
+            return Err(Error::NodeAlreadyExists(node.id));
+        }
+        let node_id = node.id.clone();
+        self.add_node(node)?;
+        self.start_node = Some(node_id);
+        Ok(())
+    }
+
+    pub fn set_end_node(&mut self, node: Node) -> Result<()> {
+        if self.end_node.is_some() {
+            return Err(Error::NodeAlreadyExists(node.id));
+        }
+        let node_id = node.id.clone();
+        self.add_node(node)?;
+        self.end_node = Some(node_id);
+        Ok(())
+    }
+
     /// 添加节点到持久化数据
-    pub fn add_node_data(&mut self, node: Node) {
-        self.node_data.insert(node.id.clone(), node);
+    pub fn add_node(&mut self, node: Node) -> Result<()> {
+        if self.nodes.contains_key(&node.id) {
+            return Err(Error::NodeAlreadyExists(node.id.clone()));
+        }
+        self.nodes.insert(node.id.clone(), node);
+        self.mark_uncompiled();
+        Ok(())
+    }
+
+    /// 更新节点数据
+    pub fn update_node(&mut self, node: Node) -> Result<()> {
+        if !self.nodes.contains_key(&node.id) {
+            return Err(Error::NodeNotFound(node.id.clone()));
+        }
+
+        self.nodes.insert(node.id.clone(), node);
+        Ok(())
+    }
+
+    /// 删除节点
+    pub fn remove_node(&mut self, node_id: &str) -> Result<()> {
+        if !self.nodes.contains_key(node_id) {
+            return Err(Error::NodeNotFound(node_id.to_string()));
+        }
+
+        // 移除节点数据
+        self.nodes.remove(node_id);
+
+        // 移除相关边（起点或终点为该节点的边）
+        self.edges
+            .retain(|edge| edge.start != node_id && edge.end != node_id);
+
+        // 检查并重置 start_node 和 end_node
+        if self.start_node.as_deref() == Some(node_id) {
+            self.start_node = None;
+        }
+
+        if self.end_node.as_deref() == Some(node_id) {
+            self.end_node = None;
+        }
+
+        // 标记未编译状态，compile 时会重新生成 predecessors 和 successors
+        self.mark_uncompiled();
+        Ok(())
     }
 
     /// 添加边，自动推断 edge_type
     pub fn add_edge(&mut self, start: &str, end: &str) -> Result<()> {
-        if !self.node_data.contains_key(start) {
+        if self.end_node.as_deref() == Some(start) {
+            return Err(Error::ExecutionError(
+                "End node cannot have outgoing edges.".to_string(),
+            ));
+        }
+
+        if self.start_node.as_deref() == Some(end) {
+            return Err(Error::ExecutionError(
+                "Start node cannot have incoming edges.".to_string(),
+            ));
+        }
+
+        if !self.nodes.contains_key(start) {
             return Err(Error::NodeNotFound(start.to_string()));
         }
-        if !self.node_data.contains_key(end) {
+        if !self.nodes.contains_key(end) {
             return Err(Error::NodeNotFound(end.to_string()));
         }
 
-        let start_node = self.node_data.get(start).unwrap();
-        let end_node = self.node_data.get(end).unwrap();
+        let start_node = self.nodes.get(start).unwrap();
+        let end_node = self.nodes.get(end).unwrap();
 
         let edge_type = if start_node.is_control_node() {
             // 控制节点出口，只能连接到数据节点
@@ -76,62 +160,31 @@ impl Graph {
         Ok(())
     }
 
-    /// 编译图：检查循环依赖并构建前置/后继节点关系
-    pub fn compile(&mut self) -> Result<()> {
-        self.predecessors.clear();
-        self.successors.clear();
-
+    fn topological_sort(&self) -> Result<Vec<String>> {
         let mut in_degree: HashMap<String, usize> = HashMap::new();
+        let mut queue = VecDeque::new();
+        let mut sorted_nodes = Vec::new();
 
-        for node_id in self.node_data.keys() {
+        // 初始化入度计数器
+        for node_id in self.nodes.keys() {
             in_degree.insert(node_id.clone(), 0);
         }
 
+        // 计算入度
         for edge in &self.edges {
-            if !self.node_data.contains_key(&edge.start) || !self.node_data.contains_key(&edge.end)
-            {
-                return Err(Error::ExecutionError(format!(
-                    "Invalid edge from {} to {}",
-                    edge.start, edge.end
-                )));
-            }
-
-            // 根据 EdgeType 区分处理
-            match edge.edge_type {
-                EdgeType::Data => {
-                    self.successors
-                        .entry(edge.start.clone())
-                        .or_default()
-                        .insert(edge.end.clone());
-                }
-                EdgeType::Control => {
-                    self.successors
-                        .entry(edge.start.clone())
-                        .or_default()
-                        .insert(edge.end.clone());
-                }
-            }
-
-            self.predecessors
-                .entry(edge.end.clone())
-                .or_default()
-                .insert(edge.start.clone());
-
             *in_degree.entry(edge.end.clone()).or_insert(0) += 1;
         }
 
-        // 拓扑排序检查循环依赖
-        let mut queue = VecDeque::new();
+        // 将入度为 0 的节点入队
         for (node, &deg) in &in_degree {
             if deg == 0 {
                 queue.push_back(node.clone());
             }
         }
 
-        let mut visited_count = 0;
-
+        // 拓扑排序
         while let Some(current) = queue.pop_front() {
-            visited_count += 1;
+            sorted_nodes.push(current.clone());
 
             if let Some(children) = self.successors.get(&current) {
                 for child in children {
@@ -145,12 +198,43 @@ impl Graph {
             }
         }
 
-        if visited_count != self.node_data.len() {
+        // 检查循环依赖
+        if sorted_nodes.len() != self.nodes.len() {
             return Err(Error::ExecutionError(
                 "Cycle detected in graph!".to_string(),
             ));
         }
 
+        Ok(sorted_nodes)
+    }
+
+    /// 编译图：检查循环依赖并构建前置/后继节点关系
+    pub fn compile(&mut self) -> Result<()> {
+        self.predecessors.clear();
+        self.successors.clear();
+
+        for edge in &self.edges {
+            if !self.nodes.contains_key(&edge.start) || !self.nodes.contains_key(&edge.end) {
+                return Err(Error::ExecutionError(format!(
+                    "Invalid edge from {} to {}",
+                    edge.start, edge.end
+                )));
+            }
+
+            // 构建前置/后继节点关系
+            self.successors
+                .entry(edge.start.clone())
+                .or_default()
+                .insert(edge.end.clone());
+
+            self.predecessors
+                .entry(edge.end.clone())
+                .or_default()
+                .insert(edge.start.clone());
+        }
+
+        // 调用拓扑排序方法
+        self.topological_sort()?;
         self.compiled = true;
         Ok(())
     }
@@ -158,7 +242,7 @@ impl Graph {
     /// 序列化为 JSON 字符串
     pub fn to_json(&self) -> String {
         let graph_data = GraphData {
-            nodes: self.node_data.clone(),
+            nodes: self.nodes.clone(),
             edges: self.edges.clone(),
         };
         serde_json::to_string_pretty(&graph_data).expect("Failed to serialize Graph")
@@ -168,7 +252,7 @@ impl Graph {
     pub fn from_json(json: &str) -> Result<Self> {
         let graph_data: GraphData = serde_json::from_str(json)?;
         let mut graph = Graph::new();
-        graph.node_data = graph_data.nodes;
+        graph.nodes = graph_data.nodes;
         graph.edges = graph_data.edges;
         Ok(graph)
     }

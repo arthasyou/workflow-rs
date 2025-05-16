@@ -8,4 +8,4 @@ pub mod output;
 pub use context::Context;
 pub use data_payload::DataPayload;
 pub use input::NodeInput;
-pub use output::NodeOutput;
+pub use output::{NodeOutput, OutputData};

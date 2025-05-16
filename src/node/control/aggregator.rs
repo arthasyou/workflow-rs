@@ -6,7 +6,7 @@ use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
-    model::{context::Context, node::DataProcessorMapping},
+    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::AggregatorConfig},
 };
 
@@ -30,7 +30,7 @@ impl AggregatorNode {
 
 #[impl_executable]
 impl Executable for AggregatorNode {
-    async fn core_execute(&self, _input: Value, context: Arc<Context>) -> Result<Value> {
+    async fn core_execute(&self, _input: DataPayload, context: Arc<Context>) -> Result<OutputData> {
         let mut aggregated = serde_json::Map::new();
 
         for (key, node_id) in &self.branches {
@@ -43,6 +43,6 @@ impl Executable for AggregatorNode {
             aggregated.insert(key.clone(), output);
         }
 
-        Ok(Value::Object(aggregated))
+        Ok(output)
     }
 }

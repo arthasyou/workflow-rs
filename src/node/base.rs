@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use uuid::Uuid;
 
 use crate::{
     error::Result,
-    model::{DataPayload, node::DataProcessorMapping},
+    model::{DataPayload, OutputData, node::DataProcessorMapping},
     processor::{InputProcessor, OutputProcessor, PROCESSOR_REGISTRY},
 };
 
@@ -57,7 +56,7 @@ impl NodeBase {
         Ok(input)
     }
 
-    pub async fn process_output(&self, output: DataPayload) -> Result<DataPayload> {
+    pub async fn process_output(&self, output: OutputData) -> Result<OutputData> {
         if let Some(name) = &self.output_processor_name {
             if let Some(processor) = PROCESSOR_REGISTRY.get_output(name) {
                 return processor.process(&output).await;

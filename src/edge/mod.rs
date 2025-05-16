@@ -8,6 +8,8 @@ pub enum EdgeType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Edge {
+    // /// Edge ID，用于唯一标识此 Edge
+    // pub id: String,
     /// 起始节点 ID（输出节点）
     pub start: String,
 

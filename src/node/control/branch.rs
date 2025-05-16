@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, process::Output, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -6,7 +6,7 @@ use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
-    model::{DataPayload, NodeOutput, context::Context, node::DataProcessorMapping},
+    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping, output},
     node::{Executable, NodeBase, config::BranchConfig},
 };
 
@@ -32,29 +32,22 @@ impl BranchNode {
 
 #[impl_executable]
 impl Executable for BranchNode {
-    async fn core_execute(&self, input: DataPayload, context: Arc<Context>) -> Result<Value> {
-        let input_str = input.as_str().ok_or(Error::InvalidBranchInput)?;
+    async fn core_execute(&self, input: DataPayload, _context: Arc<Context>) -> Result<OutputData> {
+        if let DataPayload::Text(t) = input.clone() {
+            // 根据 input_str 找到下一个节点 ID
+            let next_node_id = if let Some(target) = self.branches.get(&t) {
+                target.clone()
+            } else if let Some(default) = &self.default {
+                default.clone()
+            } else {
+                return Err(Error::NodeConfigMissing);
+            };
 
-        // 根据 input_str 找到下一个节点 ID
-        let next_node_id = if let Some(target) = self.branches.get(input_str) {
-            target.clone()
-        } else if let Some(default) = &self.default {
-            default.clone()
+            let output = OutputData::new_control(&next_node_id);
+
+            Ok(output)
         } else {
-            return Err(Error::NodeConfigMissing);
-        };
-
-        // 在 context 中查找下一个节点实例
-        let next_node = context
-            .get_node(&next_node_id)
-            .ok_or(Error::NodeNotFound(next_node_id.clone()))?;
-
-        // 执行下一个节点
-        let output = next_node.execute(input.clone(), context.clone()).await?;
-
-        Ok(serde_json::to_value(NodeOutput::new(
-            &next_node_id,
-            output,
-        ))?)
+            return Err(Error::InvalidBranchInput);
+        }
     }
 }

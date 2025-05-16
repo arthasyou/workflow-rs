@@ -7,7 +7,7 @@ use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
-    model::{NodeOutput, context::Context, node::DataProcessorMapping},
+    model::{DataPayload, NodeOutput, context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::ParallelConfig},
 };
 
@@ -31,7 +31,7 @@ impl ParallelNode {
 
 #[impl_executable]
 impl Executable for ParallelNode {
-    async fn core_execute(&self, input: Value, context: Arc<Context>) -> Result<Value> {
+    async fn core_execute(&self, input: DataPayload, context: Arc<Context>) -> Result<OutputData> {
         let mut set = JoinSet::new();
 
         for (key, node_id) in &self.branches {
@@ -52,11 +52,11 @@ impl Executable for ParallelNode {
         let mut output_map = serde_json::Map::new();
         while let Some(res) = set.join_next().await {
             if let Ok((key, output)) = res? {
-                output_map.insert(key, json!(output));
+                output_map.insert(key, output);
             }
         }
 
-        Ok(Value::Object(output_map))
+        Ok(DataPayload::Control(Value::Object(output_map)))
     }
 }
 
@@ -65,7 +65,7 @@ fn spawn_task(
     node_id: String,
     key: String,
     node: Arc<dyn Executable>,
-    input: Value,
+    input: DataPayload,
     context: Arc<Context>,
 ) -> impl std::future::Future<Output = Result<(String, NodeOutput)>> {
     async move {

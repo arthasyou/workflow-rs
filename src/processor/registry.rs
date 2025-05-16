@@ -41,14 +41,14 @@ pub static PROCESSOR_REGISTRY: Lazy<ProcessorRegistry> = Lazy::new(ProcessorRegi
 
 pub fn register_default_processors(registry: &ProcessorRegistry) {
     registry.register_input("Prompt", Some(Arc::new(LoggingProcessor)));
-    registry.register_output("Prompt", Some(Arc::new(ValidationProcessor)));
+    // registry.register_output("Prompt", Some(Arc::new(ValidationProcessor)));
 
-    registry.register_input("Model", Some(Arc::new(LoggingProcessor)));
-    registry.register_output("Model", Some(Arc::new(ValidationProcessor)));
+    // registry.register_input("Model", Some(Arc::new(LoggingProcessor)));
+    // registry.register_output("Model", Some(Arc::new(ValidationProcessor)));
 
-    registry.register_input("Aggregator", Some(Arc::new(LoggingProcessor)));
-    registry.register_output("Aggregator", Some(Arc::new(ValidationProcessor)));
+    // registry.register_input("Aggregator", Some(Arc::new(LoggingProcessor)));
+    // registry.register_output("Aggregator", Some(Arc::new(ValidationProcessor)));
 
-    registry.register_input("Transformer", Some(Arc::new(LoggingProcessor)));
-    registry.register_output("Transformer", Some(Arc::new(ValidationProcessor)));
+    // registry.register_input("Transformer", Some(Arc::new(LoggingProcessor)));
+    // registry.register_output("Transformer", Some(Arc::new(ValidationProcessor)));
 }

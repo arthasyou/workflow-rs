@@ -13,7 +13,7 @@ pub mod processor;
 pub mod runner;
 pub mod storage;
 
-use serde_json::Value;
+use model::DataPayload;
 
 use crate::{error::Result, graph::Graph, runner::Runner};
 
@@ -22,7 +22,7 @@ pub struct Workflow;
 
 impl Workflow {
     /// 启动工作流：根据 Graph 生成 Context，并执行 Runner
-    pub async fn start(mut graph: Graph, input: Value) -> Result<()> {
+    pub async fn start(mut graph: Graph, input: DataPayload) -> Result<()> {
         // 构建 Runner 并执行
         let mut runner = Runner::new();
         runner.run(&mut graph, input).await

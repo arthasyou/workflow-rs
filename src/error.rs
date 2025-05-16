@@ -13,6 +13,9 @@ pub enum Error {
     #[error("Graph not compiled.")]
     GraphNotCompiled,
 
+    #[error("Node `{0}` already exists.")]
+    NodeAlreadyExists(String),
+
     #[error("Node `{0}` not found.")]
     NodeNotFound(String),
 

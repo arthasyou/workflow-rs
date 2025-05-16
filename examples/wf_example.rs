@@ -23,8 +23,8 @@ async fn main() {
 
     // 构建 Graph
     let mut graph = Graph::new();
-    graph.add_node_data(node1);
-    graph.add_node_data(node2);
+    graph.add_node(node1);
+    graph.add_node(node2);
     graph.add_edge("node1", "node2").unwrap();
 
     // 输入数据

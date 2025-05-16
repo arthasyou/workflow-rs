@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::edge::Edge;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FileType {
     Image,
@@ -26,9 +28,6 @@ pub enum DataPayload {
     ImageMatrix(Vec<f32>),
     AudioFeatures(Vec<f32>),
     VideoFrames(Vec<Vec<u8>>),
-
-    /// 控制信号
-    Control(serde_json::Value),
 }
 
 impl DataPayload {
@@ -50,11 +49,6 @@ impl DataPayload {
     /// 创建视频帧序列
     pub fn new_video_frames(frames: Vec<Vec<u8>>) -> Self {
         DataPayload::VideoFrames(frames)
-    }
-
-    /// 创建控制信号
-    pub fn new_control(signal: Value) -> Self {
-        DataPayload::Control(signal)
     }
 
     /// 创建文件路径数据
