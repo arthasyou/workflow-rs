@@ -83,6 +83,7 @@ impl Graph {
         }
 
         self.nodes.insert(node.id.clone(), node);
+        self.mark_uncompiled();
         Ok(())
     }
 
@@ -157,6 +158,88 @@ impl Graph {
             edge_type,
         });
 
+        self.mark_uncompiled();
+
+        Ok(())
+    }
+
+    /// 删除指定的边
+    pub fn remove_edge(&mut self, start: &str, end: &str) -> Result<()> {
+        // 检查起点和终点是否存在
+        if !self.nodes.contains_key(start) {
+            return Err(Error::NodeNotFound(start.to_string()));
+        }
+
+        if !self.nodes.contains_key(end) {
+            return Err(Error::NodeNotFound(end.to_string()));
+        }
+
+        // 移除边（严格匹配 start 和 end）
+        let initial_len = self.edges.len();
+        self.edges
+            .retain(|edge| !(edge.start == start && edge.end == end));
+
+        // 如果没有移除任何边，说明边不存在
+        if self.edges.len() == initial_len {
+            return Err(Error::ExecutionError(format!(
+                "Edge from {} to {} not found.",
+                start, end
+            )));
+        }
+
+        // 标记为未编译状态
+        self.mark_uncompiled();
+        Ok(())
+    }
+
+    /// 更新指定的边
+    pub fn update_edge(&mut self, new_start: &str, new_end: &str) -> Result<()> {
+        // 查找是否存在边 new_start → new_end
+        let edge_index = self
+            .edges
+            .iter()
+            .position(|edge| edge.start == new_start && edge.end == new_end);
+
+        if edge_index.is_none() {
+            return Err(Error::ExecutionError(format!(
+                "Edge from {} to {} not found.",
+                new_start, new_end
+            )));
+        }
+
+        // 检查新起点和终点节点是否存在
+        if !self.nodes.contains_key(new_start) {
+            return Err(Error::NodeNotFound(new_start.to_string()));
+        }
+
+        if !self.nodes.contains_key(new_end) {
+            return Err(Error::NodeNotFound(new_end.to_string()));
+        }
+
+        let start_node = self.nodes.get(new_start).unwrap();
+        let end_node = self.nodes.get(new_end).unwrap();
+
+        // 推断 edge_type
+        let edge_type = if start_node.is_control_node() {
+            if end_node.is_control_node() {
+                return Err(Error::ExecutionError(format!(
+                    "Control node '{}' cannot connect to another control node '{}'",
+                    new_start, new_end
+                )));
+            }
+            EdgeType::Control
+        } else {
+            EdgeType::Data
+        };
+
+        // 更新边
+        let edge = &mut self.edges[edge_index.unwrap()];
+        edge.start = new_start.to_string();
+        edge.end = new_end.to_string();
+        edge.edge_type = edge_type;
+
+        // 标记为未编译状态
+        self.mark_uncompiled();
         Ok(())
     }
 
@@ -175,9 +258,16 @@ impl Graph {
             *in_degree.entry(edge.end.clone()).or_insert(0) += 1;
         }
 
-        // 将入度为 0 的节点入队
+        // 优先处理 `start_node`
+        if let Some(start) = &self.start_node {
+            if in_degree.contains_key(start) && in_degree[start] == 0 {
+                queue.push_back(start.clone());
+            }
+        }
+
+        // 将其他入度为 0 的节点入队
         for (node, &deg) in &in_degree {
-            if deg == 0 {
+            if deg == 0 && Some(node) != self.start_node.as_ref() {
                 queue.push_back(node.clone());
             }
         }
@@ -205,6 +295,13 @@ impl Graph {
             ));
         }
 
+        // 将 `end_node` 加入结果
+        if let Some(end) = &self.end_node {
+            if self.nodes.contains_key(end) && !sorted_nodes.contains(end) {
+                sorted_nodes.push(end.clone());
+            }
+        }
+
         Ok(sorted_nodes)
     }
 
@@ -213,6 +310,7 @@ impl Graph {
         self.predecessors.clear();
         self.successors.clear();
 
+        // 构建前置/后继节点关系
         for edge in &self.edges {
             if !self.nodes.contains_key(&edge.start) || !self.nodes.contains_key(&edge.end) {
                 return Err(Error::ExecutionError(format!(
@@ -221,7 +319,6 @@ impl Graph {
                 )));
             }
 
-            // 构建前置/后继节点关系
             self.successors
                 .entry(edge.start.clone())
                 .or_default()
@@ -233,9 +330,20 @@ impl Graph {
                 .insert(edge.start.clone());
         }
 
+        // 确保 start_node 没有前置节点
+        if let Some(start) = &self.start_node {
+            self.predecessors.entry(start.clone()).or_default();
+        }
+
+        // 确保 end_node 没有后继节点
+        if let Some(end) = &self.end_node {
+            self.successors.entry(end.clone()).or_default();
+        }
+
         // 调用拓扑排序方法
         self.topological_sort()?;
         self.compiled = true;
+
         Ok(())
     }
 
@@ -244,6 +352,8 @@ impl Graph {
         let graph_data = GraphData {
             nodes: self.nodes.clone(),
             edges: self.edges.clone(),
+            start_node: self.start_node.clone(),
+            end_node: self.end_node.clone(),
         };
         serde_json::to_string_pretty(&graph_data).expect("Failed to serialize Graph")
     }
@@ -254,6 +364,12 @@ impl Graph {
         let mut graph = Graph::new();
         graph.nodes = graph_data.nodes;
         graph.edges = graph_data.edges;
+        graph.start_node = graph_data.start_node;
+        graph.end_node = graph_data.end_node;
+
+        // 调用 compile() 构建 predecessors 和 successors
+        graph.compile()?;
+
         Ok(graph)
     }
 }

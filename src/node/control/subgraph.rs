@@ -36,32 +36,32 @@ pub struct SubGraphConfig {
     pub merge_strategy: String,
 }
 
-#[impl_executable]
-impl Executable for SubGraphNode {
-    async fn core_execute(&self, input: Value, context: Arc<Context>) -> Result<Value> {
-        let mut results = Vec::new();
+// #[impl_executable]
+// impl Executable for SubGraphNode {
+//     async fn core_execute(&self, input: Value, context: Arc<Context>) -> Result<Value> {
+//         let mut results = Vec::new();
 
-        for node_id in &self.subgraph_node_ids {
-            let node = context
-                .get_node(node_id)
-                .ok_or_else(|| Error::NodeNotFound(node_id.clone()))?;
+//         for node_id in &self.subgraph_node_ids {
+//             let node = context
+//                 .get_node(node_id)
+//                 .ok_or_else(|| Error::NodeNotFound(node_id.clone()))?;
 
-            let result = node.execute(input.clone(), context.clone()).await?;
-            results.push(result);
-        }
+//             let result = node.execute(input.clone(), context.clone()).await?;
+//             results.push(result);
+//         }
 
-        let output = match self.merge_strategy.as_str() {
-            "concat" => Value::String(
-                results
-                    .iter()
-                    .map(|v| v.to_string())
-                    .collect::<Vec<String>>()
-                    .join(", "),
-            ),
-            "json_merge" => Value::Array(results),
-            _ => Value::String("Unknown merge strategy".to_string()),
-        };
+//         let output = match self.merge_strategy.as_str() {
+//             "concat" => Value::String(
+//                 results
+//                     .iter()
+//                     .map(|v| v.to_string())
+//                     .collect::<Vec<String>>()
+//                     .join(", "),
+//             ),
+//             "json_merge" => Value::Array(results),
+//             _ => Value::String("Unknown merge strategy".to_string()),
+//         };
 
-        Ok(output)
-    }
-}
+//         Ok(output)
+//     }
+// }

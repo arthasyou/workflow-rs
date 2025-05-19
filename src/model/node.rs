@@ -44,6 +44,8 @@ pub struct Node {
 
     /// 输入数据 ID，可选
     pub input_id: Option<String>,
+
+    pub output_id: Option<String>,
 }
 
 impl Node {
@@ -53,6 +55,7 @@ impl Node {
         data: Value,
         processors: DataProcessorMapping,
         input_id: Option<String>,
+        output_id: Option<String>,
     ) -> Self {
         Self {
             id: id.to_string(),
@@ -60,6 +63,7 @@ impl Node {
             data,
             processors,
             input_id,
+            output_id,
         }
     }
 

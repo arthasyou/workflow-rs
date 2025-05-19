@@ -12,6 +12,10 @@ pub struct GraphData {
     pub nodes: HashMap<String, Node>,
     /// 边信息
     pub edges: Vec<Edge>,
+    /// 起始节点
+    pub start_node: Option<String>,
+    /// 结束节点
+    pub end_node: Option<String>,
 }
 
 impl GraphData {
@@ -20,6 +24,8 @@ impl GraphData {
         Self {
             nodes: HashMap::new(),
             edges: Vec::new(),
+            start_node: None,
+            end_node: None,
         }
     }
 
