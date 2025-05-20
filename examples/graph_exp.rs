@@ -97,22 +97,26 @@ fn main() {
     graph.add_edge("C", "E").unwrap();
     graph.add_edge("D", "End").unwrap();
     graph.add_edge("E", "End").unwrap();
-    graph.add_edge("Control1", "B").unwrap(); // 控制节点连接到数据节点
+    graph.add_edge("Control1", "B").unwrap();
 
     // 编译图
     match graph.compile() {
-        Ok(_) => println!("Graph compiled successfully."),
+        Ok(_) => {
+            println!("Graph compiled successfully.");
+            println!("Predecessors: {:#?}", graph.predecessors);
+            println!("Successors: {:#?}", graph.successors);
+        }
         Err(e) => println!("Compile Error: {:?}", e),
     }
 
-    // 输出 JSON 序列化结果
+    // JSON 序列化
     let json = graph.to_json();
-    println!("Graph as JSON:\n{}", json);
+    // println!("Serialized Graph JSON:\n{}", json);
 
     // 反序列化
     match Graph::from_json(&json) {
-        Ok(new_graph) => {
-            println!("Deserialized Graph: {:?}", new_graph);
+        Ok(_) => {
+            // println!("Deserialization successful.")
         }
         Err(e) => println!("Deserialization Error: {:?}", e),
     }
