@@ -6,15 +6,16 @@ use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
-    model::{context::Context, node::DataProcessorMapping},
+    graph::Graph,
+    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase},
+    runner::Runner,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SubGraphNode {
     pub base: NodeBase,
-    pub subgraph_node_ids: Vec<String>,
-    pub merge_strategy: String,
+    pub subgraph: Graph,
 }
 
 impl SubGraphNode {
@@ -24,44 +25,38 @@ impl SubGraphNode {
 
         Ok(Self {
             base: NodeBase::new(id, processor),
-            subgraph_node_ids: config.subgraph_node_ids,
-            merge_strategy: config.merge_strategy,
+            subgraph: config.subgraph,
         })
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SubGraphConfig {
-    pub subgraph_node_ids: Vec<String>,
+    pub subgraph: Graph,
     pub merge_strategy: String,
 }
 
-// #[impl_executable]
-// impl Executable for SubGraphNode {
-//     async fn core_execute(&self, input: Value, context: Arc<Context>) -> Result<Value> {
-//         let mut results = Vec::new();
+#[impl_executable]
+impl Executable for SubGraphNode {
+    async fn core_execute(&self, input: DataPayload, _context: Arc<Context>) -> Result<OutputData> {
+        let mut runner = Runner::new();
+        let start_node =
+            self.subgraph.start_node.as_ref().ok_or_else(|| {
+                Error::ExecutionError("SubGraph start node is not defined".into())
+            })?;
 
-//         for node_id in &self.subgraph_node_ids {
-//             let node = context
-//                 .get_node(node_id)
-//                 .ok_or_else(|| Error::NodeNotFound(node_id.clone()))?;
+        runner.set_input(start_node, input.clone());
+        let mut subgraph = self.subgraph.clone();
+        runner.run(&mut subgraph, input).await?;
 
-//             let result = node.execute(input.clone(), context.clone()).await?;
-//             results.push(result);
-//         }
+        let end_node = self
+            .subgraph
+            .end_node
+            .as_ref()
+            .ok_or_else(|| Error::ExecutionError("SubGraph end node is not defined".into()))?;
 
-//         let output = match self.merge_strategy.as_str() {
-//             "concat" => Value::String(
-//                 results
-//                     .iter()
-//                     .map(|v| v.to_string())
-//                     .collect::<Vec<String>>()
-//                     .join(", "),
-//             ),
-//             "json_merge" => Value::Array(results),
-//             _ => Value::String("Unknown merge strategy".to_string()),
-//         };
+        let output = runner.get_output(end_node)?;
 
-//         Ok(output)
-//     }
-// }
+        Ok(output.clone())
+    }
+}

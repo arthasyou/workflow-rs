@@ -116,7 +116,7 @@ impl Runner {
                         }
                     }
                 }
-                OutputData::Parallel(node_outputs) => todo!(),
+                OutputData::Parallel(_node_outputs) => todo!(),
             }
         }
 

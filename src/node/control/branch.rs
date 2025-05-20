@@ -1,4 +1,4 @@
-use std::{collections::HashMap, process::Output, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -6,7 +6,7 @@ use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
-    model::{DataPayload, OutputData, context::Context, input, node::DataProcessorMapping, output},
+    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::BranchConfig},
 };
 

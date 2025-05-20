@@ -5,7 +5,7 @@ use std::{
 
 use once_cell::sync::Lazy;
 
-use super::implementations::{logging::LoggingProcessor, validation::ValidationProcessor};
+use super::implementations::logging::LoggingProcessor;
 use crate::processor::{InputProcessor, OutputProcessor};
 
 /// Processor Registry
