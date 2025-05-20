@@ -5,7 +5,7 @@ use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
-    model::{DataPayload, context::Context, node::DataProcessorMapping},
+    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::RepeatConfig},
 };
 
@@ -29,21 +29,29 @@ impl RepeatNode {
     }
 }
 
-// #[impl_executable]
-// impl Executable for RepeatNode {
-//     async fn core_execute(&self, input: DataPayload, context: Arc<Context>) -> Result<OutputData>
-// {         let mut current_input = input;
+#[impl_executable]
+impl Executable for RepeatNode {
+    async fn core_execute(&self, input: DataPayload, context: Arc<Context>) -> Result<OutputData> {
+        let mut current_input = input;
 
-//         for _ in 0 .. self.max_iterations {
-//             let child_node = context
-//                 .get_node(&self.child_id)
-//                 .ok_or_else(|| Error::NodeNotFound(self.child_id.clone()))?;
+        for _ in 0 .. self.max_iterations {
+            let child_node = context
+                .get_node(&self.child_id)
+                .ok_or_else(|| Error::NodeNotFound(self.child_id.clone()))?;
 
-//             current_input = child_node
-//                 .execute(current_input.clone(), context.clone())
-//                 .await?;
-//         }
+            let output = child_node
+                .execute(current_input.clone(), context.clone())
+                .await?;
 
-//         Ok(current_input)
-//     }
-// }
+            if let OutputData::Data(data) = output {
+                current_input = data;
+            } else {
+                return Err(Error::ExecutionError(
+                    "Invalid output from child node".into(),
+                ));
+            }
+        }
+
+        Ok(OutputData::Data(current_input))
+    }
+}

@@ -6,7 +6,10 @@ use workflow_macro::impl_executable;
 
 use crate::{
     error::{Error, Result},
-    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
+    model::{
+        DataPayload, OutputData, context::Context, data_payload::SingleData,
+        node::DataProcessorMapping,
+    },
     node::{Executable, NodeBase, config::PromptConfig},
 };
 
@@ -46,8 +49,7 @@ impl Executable for PromptNode {
         _context: Arc<Context>,
     ) -> Result<OutputData> {
         let response = &self.template;
-        Ok(OutputData::new_data(DataPayload::Text(
-            response.to_string(),
-        )))
+        let text = SingleData::new_text(response);
+        Ok(OutputData::new_data(DataPayload::new_single(text)))
     }
 }

@@ -7,6 +7,7 @@ use super::DataPayload;
 pub enum OutputData {
     Control(String),
     Data(DataPayload),
+    Parallel(Vec<NodeOutput>),
 }
 
 impl OutputData {
@@ -19,19 +20,30 @@ impl OutputData {
     pub fn new_data(data: DataPayload) -> Self {
         Self::Data(data)
     }
+
+    pub fn default_parallel() -> Self {
+        Self::Parallel(Vec::new())
+    }
+
+    pub fn insert_parallel(&mut self, node_output: NodeOutput) {
+        if let Self::Parallel(outputs) = self {
+            outputs.push(node_output);
+        }
+    }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NodeOutput {
     pub next_node_id: String,
-    pub input: DataPayload,
+    pub data: OutputData,
 }
 
 impl NodeOutput {
     /// 创建新的 NodeOutput
-    pub fn new(next_node_id: &str, input: DataPayload) -> Self {
+    pub fn new(next_node_id: &str, data: OutputData) -> Self {
         Self {
             next_node_id: next_node_id.to_string(),
-            input,
+            data,
         }
     }
 }

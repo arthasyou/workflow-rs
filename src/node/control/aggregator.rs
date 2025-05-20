@@ -28,21 +28,27 @@ impl AggregatorNode {
     }
 }
 
-// #[impl_executable]
-// impl Executable for AggregatorNode {
-//     async fn core_execute(&self, _input: DataPayload, context: Arc<Context>) ->
-// Result<OutputData> {         let mut aggregated = serde_json::Map::new();
+#[impl_executable]
+impl Executable for AggregatorNode {
+    async fn core_execute(&self, input: DataPayload, context: Arc<Context>) -> Result<OutputData> {
+        let mut aggregated = DataPayload::new_collection();
 
-//         for (key, node_id) in &self.branches {
-//             let node = context
-//                 .get_node(node_id)
-//                 .ok_or(Error::NodeNotFound(node_id.clone()))?
-//                 .clone();
+        for (_key, node_id) in &self.branches {
+            let node = context
+                .get_node(node_id)
+                .ok_or(Error::NodeNotFound(node_id.clone()))?
+                .clone();
 
-//             let output = node.execute(json!(null), context.clone()).await?;
-//             aggregated.insert(key.clone(), output);
-//         }
+            let output = node.execute(input.clone(), context.clone()).await?;
 
-//         Ok(output)
-//     }
-// }
+            match output {
+                OutputData::Data(data_payload) => {
+                    aggregated = aggregated.merge(data_payload);
+                }
+                _ => {}
+            }
+        }
+
+        Ok(OutputData::Data(aggregated))
+    }
+}

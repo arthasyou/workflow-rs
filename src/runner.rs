@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet, VecDeque},
+    collections::{HashMap, VecDeque},
     sync::Arc,
 };
 
@@ -15,7 +15,6 @@ pub struct Runner {
     outputs: HashMap<String, OutputData>, // 每个节点的输出数据
     queue: VecDeque<String>,
     pending_predecessors: HashMap<String, usize>,
-    executed: HashSet<String>,
 }
 
 impl Runner {
@@ -25,7 +24,6 @@ impl Runner {
             outputs: HashMap::new(),
             queue: VecDeque::new(),
             pending_predecessors: HashMap::new(),
-            executed: HashSet::new(),
         }
     }
 
@@ -58,13 +56,13 @@ impl Runner {
         graph.compile()?;
         let context = Context::from_graph(graph);
         self.prepare(graph, input)?;
-        self.execute_all_nodes(context).await
+        self.execute_all_nodes(graph, context).await?;
+        Ok(())
     }
 
     /// 初始化节点状态
     fn prepare(&mut self, graph: &Graph, input: DataPayload) -> Result<()> {
         self.queue.clear();
-        self.executed.clear();
         self.pending_predecessors.clear();
         self.inputs.clear();
         self.outputs.clear();
@@ -84,14 +82,8 @@ impl Runner {
     }
 
     /// 执行所有节点
-    async fn execute_all_nodes(&mut self, context: Arc<Context>) -> Result<()> {
+    async fn execute_all_nodes(&mut self, graph: &Graph, context: Arc<Context>) -> Result<()> {
         while let Some(current) = self.queue.pop_front() {
-            if self.executed.contains(&current) {
-                continue;
-            }
-
-            self.executed.insert(current.clone());
-
             let input_value = self.get_input(&current)?;
 
             let node = context
@@ -102,38 +94,29 @@ impl Runner {
 
             match output {
                 OutputData::Control(next_node_id) => {
-                    // 如果是控制信号，直接跳转到指定节点
                     if context.get_node(&next_node_id).is_some() {
                         self.queue.push_back(next_node_id.clone());
-                    } else {
-                        return Err(Error::NodeNotFound(next_node_id));
                     }
                 }
                 OutputData::Data(data_payload) => {
-                    // 如果是数据输出，将数据保存到当前节点的输出
                     self.set_output(&current, OutputData::Data(data_payload.clone()));
 
-                    // TODO : 处理节点输入
-                    // // 处理下一个节点
-                    // if let Some(successors) = context.graph.successors.get(&current) {
-                    //     for next_node_id in successors {
-                    //         if self.executed.contains(next_node_id) {
-                    //             continue; // 已执行节点不再加入队列
-                    //         }
+                    // 直接从 `graph.successors` 读取后继节点
+                    if let Some(successors) = graph.successors.get(&current) {
+                        for next_node_id in successors {
+                            let pred_count =
+                                self.pending_predecessors.get_mut(next_node_id).unwrap();
+                            if *pred_count > 0 {
+                                *pred_count -= 1;
+                            }
 
-                    //         // 检查下一个节点是否存在
-                    //         if context.get_node(next_node_id).is_err() {
-                    //             return Err(Error::NodeNotFound(next_node_id.clone()));
-                    //         }
-
-                    //         // 将当前节点的输出作为下一个节点的输入
-                    //         self.set_input(next_node_id, data_payload.clone());
-
-                    //         // 加入执行队列
-                    //         self.queue.push_back(next_node_id.clone());
-                    //     }
-                    // }
+                            if *pred_count == 0 {
+                                self.queue.push_back(next_node_id.clone());
+                            }
+                        }
+                    }
                 }
+                OutputData::Parallel(node_outputs) => todo!(),
             }
         }
 

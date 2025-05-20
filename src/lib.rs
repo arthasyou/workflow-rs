@@ -12,6 +12,7 @@ pub mod node;
 pub mod processor;
 pub mod runner;
 pub mod storage;
+pub mod utils;
 
 use model::DataPayload;
 
