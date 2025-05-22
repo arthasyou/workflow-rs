@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use super::{Executable, data::PromptNode};
+use super::{
+    Executable,
+    data::{PromptNode, indentity::IdentityNode},
+};
 use crate::{
     error::Result,
     model::node::{ControlNode, DataNode, Node, NodeType},
@@ -17,6 +20,7 @@ pub fn build_node(node: &Node) -> Result<Arc<dyn Executable>> {
     let executable: Box<dyn Executable> = match &node.node_type {
         NodeType::Data(exec_node) => match exec_node {
             DataNode::Prompt => Box::new(PromptNode::new(id, data, processors)?),
+            DataNode::Identity => Box::new(IdentityNode::new(id, data, processors)?),
         },
         NodeType::Control(orch_node) => match orch_node {
             ControlNode::Branch => {
@@ -29,6 +33,7 @@ pub fn build_node(node: &Node) -> Result<Arc<dyn Executable>> {
             ControlNode::Repeat => {
                 todo!("RepeatNode not implemented")
             }
+            ControlNode::Aggregator => todo!(),
         },
     };
 

@@ -10,6 +10,7 @@ pub enum NodeType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DataNode {
     Prompt,
+    Identity,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,6 +18,7 @@ pub enum ControlNode {
     Branch,
     Parallel,
     Repeat,
+    Aggregator,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,6 +67,28 @@ impl Node {
             input_id,
             output_id,
         }
+    }
+
+    pub fn new_start() -> Self {
+        Node::new(
+            "start",
+            NodeType::Data(DataNode::Identity),
+            Value::Null,
+            DataProcessorMapping::default(),
+            None,
+            None,
+        )
+    }
+
+    pub fn new_end() -> Self {
+        Node::new(
+            "end",
+            NodeType::Control(ControlNode::Aggregator),
+            Value::Null,
+            DataProcessorMapping::default(),
+            None,
+            None,
+        )
     }
 
     /// 判断节点是否为控制节点 (Orchestration Node)
