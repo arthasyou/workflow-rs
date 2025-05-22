@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use super::{
     Executable,
+    control::{AggregatorNode, BranchNode, ParallelNode, RepeatNode},
     data::{PromptNode, indentity::IdentityNode},
 };
 use crate::{
@@ -23,17 +24,10 @@ pub fn build_node(node: &Node) -> Result<Arc<dyn Executable>> {
             DataNode::Identity => Box::new(IdentityNode::new(id, data, processors)?),
         },
         NodeType::Control(orch_node) => match orch_node {
-            ControlNode::Branch => {
-                todo!("BranchNode not implemented")
-                // Box::new(BranchNode::new(id, data, processors)?)
-            }
-            ControlNode::Parallel => {
-                todo!("ParallelNode not implemented")
-            }
-            ControlNode::Repeat => {
-                todo!("RepeatNode not implemented")
-            }
-            ControlNode::Aggregator => todo!(),
+            ControlNode::Branch => Box::new(BranchNode::new(id, data, processors)?),
+            ControlNode::Parallel => Box::new(ParallelNode::new(id, data, processors)?),
+            ControlNode::Repeat => Box::new(RepeatNode::new(id, data, processors)?),
+            ControlNode::Aggregator => Box::new(AggregatorNode::new(id, data, processors)?),
         },
     };
 
