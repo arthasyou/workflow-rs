@@ -42,6 +42,18 @@ impl Graph {
         }
     }
 
+    /// 创建一个新的图结构，并默认添加 start 和 end 节点
+    pub fn new_with_default_nodes() -> Result<Self> {
+        let mut graph = Graph::new();
+
+        let start_node = Node::new_start();
+        let end_node = Node::new_end();
+        graph.set_start_node(start_node)?;
+        graph.set_end_node(end_node)?;
+
+        Ok(graph)
+    }
+
     fn mark_uncompiled(&mut self) {
         self.compiled = false;
     }
