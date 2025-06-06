@@ -5,37 +5,37 @@ use serde_json::Value;
 use workflow_macro::impl_executable;
 
 use crate::{
-    error::Result,
+    error::{Error, Result},
     model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
-    node::{Executable, NodeBase},
+    node::{Executable, NodeBase, config::InputConfig},
 };
 
 /// IdentityNode 节点：输入即输出，无处理逻辑
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IdentityNode {
+pub struct InputNode {
     base: NodeBase,
+    input: DataPayload,
 }
 
-impl IdentityNode {
-    pub fn new(id: &str, _data: Value, processor: &DataProcessorMapping) -> Result<Self> {
+impl InputNode {
+    pub fn new(id: &str, data: Value, processor: &DataProcessorMapping) -> Result<Self> {
+        let config: InputConfig = serde_json::from_value(data)
+            .map_err(|_| Error::ExecutionError("Invalid data format for InputNode".into()))?;
+
         Ok(Self {
             base: NodeBase::new(id, processor),
+            input: config.input,
         })
     }
 }
 
 #[impl_executable]
-impl Executable for IdentityNode {
+impl Executable for InputNode {
     async fn core_execute(
         &self,
-        input: Option<DataPayload>,
+        _input: Option<DataPayload>,
         _context: Arc<Context>,
     ) -> Result<OutputData> {
-        match input {
-            Some(data) => Ok(OutputData::new_data(data)),
-            None => Err(crate::error::Error::ExecutionError(
-                "No input data provided".into(),
-            )),
-        }
+        Ok(OutputData::new_data(self.input.clone()))
     }
 }

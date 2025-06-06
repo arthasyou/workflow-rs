@@ -31,7 +31,11 @@ impl ParallelNode {
 
 #[impl_executable]
 impl Executable for ParallelNode {
-    async fn core_execute(&self, input: DataPayload, context: Arc<Context>) -> Result<OutputData> {
+    async fn core_execute(
+        &self,
+        input: Option<DataPayload>,
+        context: Arc<Context>,
+    ) -> Result<OutputData> {
         let mut set = JoinSet::new();
 
         for (key, node_id) in &self.branches {
@@ -68,7 +72,7 @@ fn spawn_task(
     node_id: String,
     key: String,
     node: Arc<dyn Executable>,
-    input: DataPayload,
+    input: Option<DataPayload>,
     context: Arc<Context>,
 ) -> impl std::future::Future<Output = Result<(String, NodeOutput)>> {
     async move {

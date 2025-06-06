@@ -45,7 +45,7 @@ impl Executable for PromptNode {
     /// 核心执行逻辑
     async fn core_execute(
         &self,
-        _input: DataPayload,
+        _input: Option<DataPayload>,
         _context: Arc<Context>,
     ) -> Result<OutputData> {
         let response = &self.template;

@@ -9,6 +9,7 @@ pub enum NodeType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DataNode {
+    Input,
     Prompt,
     Identity,
 }
@@ -72,8 +73,14 @@ impl Node {
     pub fn new_start() -> Self {
         Node::new(
             "start",
-            NodeType::Data(DataNode::Identity),
-            Value::Null,
+            NodeType::Data(DataNode::Input),
+            serde_json::json!({
+                "input": {
+                    "Single": {
+                        "Text": "A"
+                    }
+                }
+            }),
             DataProcessorMapping::default(),
             None,
             None,

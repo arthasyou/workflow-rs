@@ -3,6 +3,13 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::model::DataPayload;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InputConfig {
+    pub input: DataPayload,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PromptConfig {
     pub template: String,

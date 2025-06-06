@@ -8,6 +8,7 @@ use super::{
 use crate::{
     error::Result,
     model::node::{ControlNode, DataNode, Node, NodeType},
+    node::data::input::InputNode,
 };
 
 /// 构建节点实例
@@ -20,6 +21,7 @@ pub fn build_node(node: &Node) -> Result<Arc<dyn Executable>> {
 
     let executable: Box<dyn Executable> = match &node.node_type {
         NodeType::Data(exec_node) => match exec_node {
+            DataNode::Input => Box::new(InputNode::new(id, data, processors)?),
             DataNode::Prompt => Box::new(PromptNode::new(id, data, processors)?),
             DataNode::Identity => Box::new(IdentityNode::new(id, data, processors)?),
         },

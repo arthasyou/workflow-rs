@@ -53,33 +53,30 @@ impl Runner {
             .ok_or_else(|| Error::NodeNotFound(node_id.to_string()))
     }
 
-    pub fn get_resolved_input(&self, node_id: &str) -> Result<DataPayload> {
+    pub fn get_resolved_input(&self, node_id: &str) -> Option<DataPayload> {
         if let Some(data) = self.inputs.get(node_id) {
-            return Ok(data.clone());
+            return Some(data.clone());
         }
         if let Some(source_id) = self.input_refs.get(node_id) {
             if let Some(data) = self.outputs.get(source_id) {
-                return Ok(data.clone());
+                return Some(data.clone());
             }
         }
-        Err(Error::NodeNotFound(format!(
-            "Input for node {} not found.",
-            node_id
-        )))
+        None
     }
 
     /// 运行图
-    pub async fn run(&mut self, graph: &mut Graph, input: DataPayload) -> Result<DataPayload> {
+    pub async fn run(&mut self, graph: &mut Graph) -> Result<DataPayload> {
         graph.compile()?;
         let context = Context::from_graph(graph);
-        self.prepare(graph, input)?;
+        self.prepare(graph)?;
         self.execute_all_nodes(graph, context).await?;
         let output = self.get_output("end")?;
         Ok(output.clone())
     }
 
     /// 初始化节点状态
-    fn prepare(&mut self, graph: &Graph, input: DataPayload) -> Result<()> {
+    fn prepare(&mut self, graph: &Graph) -> Result<()> {
         self.queue.clear();
         self.pending_predecessors.clear();
         self.inputs.clear();
@@ -92,29 +89,54 @@ impl Runner {
                 .insert(node_id.clone(), pred_count);
 
             if pred_count == 0 {
+                // self.inputs.insert(node_id.clone(), DataPayload::default());
                 self.queue.push_back(node_id.clone());
-                self.set_input(node_id, input.clone());
             }
         }
 
         Ok(())
     }
 
+    fn mark_branch_skipped(&mut self, node_id: &str, graph: &Graph) {
+        if let Some(successors) = graph.successors.get(node_id) {
+            for succ in successors {
+                if let Some(pred_count) = self.pending_predecessors.get_mut(succ) {
+                    if *pred_count > 0 {
+                        *pred_count -= 1;
+                    }
+                }
+            }
+        }
+    }
+
     /// 执行所有节点
     async fn execute_all_nodes(&mut self, graph: &Graph, context: Arc<Context>) -> Result<()> {
         while let Some(current) = self.queue.pop_front() {
-            let input_value = self.get_resolved_input(&current)?;
+            let input_value = self.get_resolved_input(&current);
 
             let node = context
                 .get_node(&current)
                 .ok_or_else(|| Error::NodeNotFound(current.clone()))?;
 
-            let output = node.execute(input_value.clone(), context.clone()).await?;
+            let output = node.execute(input_value, context.clone()).await?;
 
             match output {
                 OutputData::Control(next_node_id) => {
+                    // TODO 这段代码还是有点问题，可能需要重构 predecessors 的逻辑
+                    if let Some(successors) = graph.successors.get(&current) {
+                        for succ in successors {
+                            if let Some(p) = self.pending_predecessors.get_mut(succ) {
+                                *p -= 1;
+                            }
+                            if succ != &next_node_id {
+                                self.mark_branch_skipped(succ, graph);
+                            }
+                        }
+                    }
                     if context.get_node(&next_node_id).is_some() {
                         self.queue.push_back(next_node_id.clone());
+                        self.input_refs
+                            .insert(next_node_id.clone(), current.clone());
                     }
                 }
                 OutputData::Data(data_payload) => {

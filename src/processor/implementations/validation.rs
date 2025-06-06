@@ -7,8 +7,8 @@ pub struct ValidationProcessor;
 
 #[async_trait]
 impl Processor<DataPayload> for ValidationProcessor {
-    async fn process(&self, data: &DataPayload) -> Result<DataPayload> {
+    async fn process(&self, data: &DataPayload) -> Option<DataPayload> {
         println!("Validating Output: {:?}", data);
-        Ok(data.clone())
+        Some(data.clone())
     }
 }

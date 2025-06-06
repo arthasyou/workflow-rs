@@ -47,22 +47,31 @@ impl Default for NodeBase {
 }
 
 impl NodeBase {
-    pub async fn process_input(&self, input: DataPayload) -> Result<DataPayload> {
+    pub async fn process_input(&self, input: Option<DataPayload>) -> Option<DataPayload> {
         if let Some(name) = &self.input_processor_name {
             if let Some(processor) = PROCESSOR_REGISTRY.get_input(name) {
-                return processor.process(&input).await;
+                match input {
+                    Some(data) => {
+                        // 如果输入数据存在，使用处理器处理
+                        return processor.process(&data).await;
+                    }
+                    None => {
+                        // 如果没有输入数据，直接返回 None
+                        return None;
+                    }
+                }
             }
         }
-        Ok(input)
+        input
     }
 
-    pub async fn process_output(&self, output: OutputData) -> Result<OutputData> {
+    pub async fn process_output(&self, output: OutputData) -> Option<OutputData> {
         if let Some(name) = &self.output_processor_name {
             if let Some(processor) = PROCESSOR_REGISTRY.get_output(name) {
                 return processor.process(&output).await;
             }
         }
-        Ok(output)
+        Some(output)
     }
 }
 

@@ -69,6 +69,12 @@ pub enum DataPayload {
     Collection(DataCollection),
 }
 
+impl Default for DataPayload {
+    fn default() -> Self {
+        DataPayload::Single(SingleData::Text("".into()))
+    }
+}
+
 impl DataPayload {
     /// 创建单一数据类型
     pub fn new_single(data: SingleData) -> Self {

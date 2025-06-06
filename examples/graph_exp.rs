@@ -1,18 +1,14 @@
-use serde_json::json;
+use serde_json::{Value, json};
 use workflow_rs::{
     graph::Graph,
-    model::{
-        DataPayload,
-        data_payload::SingleData,
-        node::{ControlNode, DataNode, DataProcessorMapping, Node, NodeType},
-    },
+    model::node::{ControlNode, DataNode, DataProcessorMapping, Node, NodeType},
     runner::Runner,
 };
 
 #[tokio::main]
 async fn main() {
     // 创建一个新的图
-    let mut graph = Graph::new_with_default_nodes().unwrap();
+    let mut graph = Graph::new();
 
     // 定义节点 (不包含 Start 和 End)
     let nodes = vec![
@@ -32,38 +28,36 @@ async fn main() {
             Some("input1".to_string()),
             Some("output1".to_string()),
         ),
-        // Node::new(
-        //     "C",
-        //     NodeType::Data(DataNode::Prompt),
-        //     json!({ "message": "Node C Data" }),
-        //     DataProcessorMapping::default(),
-        //     None,
-        //     None,
-        // ),
-        // Node::new(
-        //     "D",
-        //     NodeType::Data(DataNode::Prompt),
-        //     json!({ "message": "Node D Data" }),
-        //     DataProcessorMapping::default(),
-        //     Some("input2".to_string()),
-        //     Some("output2".to_string()),
-        // ),
-        // Node::new(
-        //     "E",
-        //     NodeType::Data(DataNode::Prompt),
-        //     json!({ "message": "Node E Data" }),
-        //     DataProcessorMapping::default(),
-        //     None,
-        //     None,
-        // ),
-        // Node::new(
-        //     "Control1",
-        //     NodeType::Control(ControlNode::Branch),
-        //     json!({ "condition": "x > 5" }),
-        //     DataProcessorMapping::default(),
-        //     None,
-        //     None,
-        // ),
+        Node::new(
+            "C",
+            NodeType::Data(DataNode::Prompt),
+            json!({ "template": "Node C Data" }),
+            DataProcessorMapping::default(),
+            None,
+            None,
+        ),
+        Node::new(
+            "D",
+            NodeType::Data(DataNode::Identity),
+            json!({}),
+            DataProcessorMapping::default(),
+            None,
+            None,
+        ),
+        Node::new(
+            "Control1",
+            NodeType::Control(ControlNode::Branch),
+            json!({
+              "branches": {
+                "A": "A",
+                "B": "B"
+              },
+              "default": "C"
+            }),
+            DataProcessorMapping::default(),
+            None,
+            None,
+        ),
     ];
 
     // 添加节点
@@ -71,46 +65,51 @@ async fn main() {
         graph.add_node(node).unwrap();
     }
 
-    // // 设置 Start 节点
-    // graph
-    //     .set_start_node(Node::new(
-    //         "Start",
-    //         NodeType::Data(DataNode::Prompt),
-    //         json!({ "message": "Start Node" }),
-    //         DataProcessorMapping::default(),
-    //         None,
-    //         None,
-    //     ))
-    //     .unwrap();
+    // 设置 Start 节点
+    graph
+        .set_start_node(Node::new(
+            "start",
+            NodeType::Data(DataNode::Input),
+            serde_json::json!({
+                "input": {
+                    "Single": {
+                        "Text": "A"
+                    }
+                }
+            }),
+            DataProcessorMapping::default(),
+            None,
+            None,
+        ))
+        .unwrap();
 
-    // // 设置 End 节点
-    // graph
-    //     .set_end_node(Node::new(
-    //         "End",
-    //         NodeType::Data(DataNode::Prompt),
-    //         json!({ "message": "End Node" }),
-    //         DataProcessorMapping::default(),
-    //         None,
-    //         None,
-    //     ))
-    //     .unwrap();
+    // 设置 End 节点
+    graph
+        .set_end_node(Node::new(
+            "end",
+            NodeType::Data(DataNode::Identity),
+            Value::Null,
+            DataProcessorMapping::default(),
+            None,
+            None,
+        ))
+        .unwrap();
 
     // 添加边
-    graph.add_edge("start", "A").unwrap();
-    graph.add_edge("A", "B").unwrap();
-    // graph.add_edge("A", "C").unwrap();
-    // graph.add_edge("B", "D").unwrap();
-    // graph.add_edge("C", "E").unwrap();
-    // graph.add_edge("D", "End").unwrap();
-    graph.add_edge("B", "end").unwrap();
-    // graph.add_edge("Control1", "B").unwrap();
+    graph.add_edge("start", "Control1").unwrap();
 
-    // 使用 Runner 执行图
+    graph.add_edge("Control1", "A").unwrap();
+    graph.add_edge("Control1", "B").unwrap();
+    graph.add_edge("Control1", "C").unwrap();
+
+    graph.add_edge("A", "D").unwrap();
+    graph.add_edge("B", "D").unwrap();
+    graph.add_edge("C", "D").unwrap();
+    graph.add_edge("D", "end").unwrap();
+
+    // // 使用 Runner 执行图
     let mut runner = Runner::new();
 
-    let input = SingleData::new_text("test");
-    let input = DataPayload::new_single(input); // 转换为 DataPayload 类型
-
-    let r = runner.run(&mut graph, input).await.unwrap();
+    let r = runner.run(&mut graph).await.unwrap();
     println!("Graph execution result: {:?}", r);
 }

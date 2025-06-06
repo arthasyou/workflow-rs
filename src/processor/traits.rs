@@ -2,14 +2,11 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{
-    error::Result,
-    model::{DataPayload, OutputData},
-};
+use crate::model::{DataPayload, OutputData};
 
 #[async_trait]
 pub trait Processor<T> {
-    async fn process(&self, data: &T) -> Result<T>;
+    async fn process(&self, data: &T) -> Option<T>;
 }
 
 /// 输入和输出 Processor 类型

@@ -32,22 +32,28 @@ impl BranchNode {
 
 #[impl_executable]
 impl Executable for BranchNode {
-    async fn core_execute(&self, input: DataPayload, _context: Arc<Context>) -> Result<OutputData> {
-        if let Some(t) = input.as_text() {
-            // 根据 input_str 找到下一个节点 ID
-            let next_node_id = if let Some(target) = self.branches.get(t) {
-                target.clone()
-            } else if let Some(default) = &self.default {
-                default.clone()
-            } else {
-                return Err(Error::NodeConfigMissing);
-            };
+    async fn core_execute(
+        &self,
+        input: Option<DataPayload>,
+        _context: Arc<Context>,
+    ) -> Result<OutputData> {
+        match input {
+            None => Err(Error::ExecutionError("No input data provided".into())),
+            Some(data) => {
+                // 根据 input_str 找到下一个节点 ID
+                let next_node_id = if let Some(target) = self.branches.get(data.as_text().unwrap())
+                {
+                    target.clone()
+                } else if let Some(default) = &self.default {
+                    default.clone()
+                } else {
+                    return Err(Error::NodeConfigMissing);
+                };
 
-            let output = OutputData::new_control(&next_node_id);
+                let output = OutputData::new_control(&next_node_id);
 
-            Ok(output)
-        } else {
-            return Err(Error::InvalidBranchInput);
+                Ok(output)
+            }
         }
     }
 }

@@ -30,7 +30,11 @@ impl AggregatorNode {
 
 #[impl_executable]
 impl Executable for AggregatorNode {
-    async fn core_execute(&self, input: DataPayload, context: Arc<Context>) -> Result<OutputData> {
+    async fn core_execute(
+        &self,
+        input: Option<DataPayload>,
+        context: Arc<Context>,
+    ) -> Result<OutputData> {
         let mut aggregated = DataPayload::new_collection();
 
         for (_key, node_id) in &self.branches {

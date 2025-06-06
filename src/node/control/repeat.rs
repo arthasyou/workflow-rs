@@ -31,7 +31,11 @@ impl RepeatNode {
 
 #[impl_executable]
 impl Executable for RepeatNode {
-    async fn core_execute(&self, input: DataPayload, context: Arc<Context>) -> Result<OutputData> {
+    async fn core_execute(
+        &self,
+        input: Option<DataPayload>,
+        context: Arc<Context>,
+    ) -> Result<OutputData> {
         let mut current_input = input;
 
         for _ in 0 .. self.max_iterations {
@@ -44,7 +48,7 @@ impl Executable for RepeatNode {
                 .await?;
 
             if let OutputData::Data(data) = output {
-                current_input = data;
+                current_input = Some(data);
             } else {
                 return Err(Error::ExecutionError(
                     "Invalid output from child node".into(),
@@ -52,6 +56,9 @@ impl Executable for RepeatNode {
             }
         }
 
-        Ok(OutputData::Data(current_input))
+        match current_input {
+            None => Err(Error::ExecutionError("No input data provided".into())),
+            Some(data) => Ok(OutputData::Data(data)),
+        }
     }
 }

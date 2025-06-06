@@ -7,8 +7,8 @@ pub struct LoggingProcessor;
 
 #[async_trait]
 impl Processor<DataPayload> for LoggingProcessor {
-    async fn process(&self, data: &DataPayload) -> Result<DataPayload> {
+    async fn process(&self, data: &DataPayload) -> Option<DataPayload> {
         println!("Logging Input: {:?}", data);
-        Ok(data.clone())
+        Some(data.clone())
     }
 }
