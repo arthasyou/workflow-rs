@@ -69,13 +69,13 @@ impl Runner {
     }
 
     /// 运行图
-    pub async fn run(&mut self, graph: &mut Graph, input: DataPayload) -> Result<DataPayload> {
+    pub async fn run(&mut self, graph: &mut Graph, input: DataPayload) -> Result<()> {
         graph.compile()?;
         let context = Context::from_graph(graph);
         self.prepare(graph, input)?;
         self.execute_all_nodes(graph, context).await?;
-        let output = self.get_output("end")?;
-        Ok(output.clone())
+
+        Ok(())
     }
 
     /// 初始化节点状态

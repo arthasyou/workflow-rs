@@ -23,7 +23,7 @@ pub struct Workflow;
 
 impl Workflow {
     /// 启动工作流：根据 Graph 生成 Context，并执行 Runner
-    pub async fn start(mut graph: Graph, input: DataPayload) -> Result<()> {
+    pub async fn start(mut graph: Graph, input: DataPayload) -> Result<DataPayload> {
         // 构建 Runner 并执行
         let mut runner = Runner::new();
         runner.run(&mut graph, input).await

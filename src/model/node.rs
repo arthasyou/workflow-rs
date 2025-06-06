@@ -83,7 +83,7 @@ impl Node {
     pub fn new_end() -> Self {
         Node::new(
             "end",
-            NodeType::Control(ControlNode::Aggregator),
+            NodeType::Data(DataNode::Identity),
             Value::Null,
             DataProcessorMapping::default(),
             None,
