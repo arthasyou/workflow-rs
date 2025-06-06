@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::{error::Result, model::DataPayload, processor::Processor};
+use crate::{model::DataPayload, processor::Processor};
 
 /// ValidationProcessor 示例
 pub struct ValidationProcessor;

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::{error::Result, model::DataPayload, processor::Processor};
+use crate::{model::DataPayload, processor::Processor};
 
 /// LoggingProcessor 示例
 pub struct LoggingProcessor;
