@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    error::Result,
     model::{DataPayload, OutputData, node::DataProcessorMapping},
     processor::{InputProcessor, OutputProcessor, PROCESSOR_REGISTRY},
 };
