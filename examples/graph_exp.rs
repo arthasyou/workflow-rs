@@ -1,8 +1,8 @@
 use serde_json::{Value, json};
 use workflow_rs::{
+    Workflow,
     graph::Graph,
     model::node::{ControlNode, DataNode, DataProcessorMapping, Node, NodeType},
-    runner::Runner,
 };
 
 #[tokio::main]
@@ -107,9 +107,12 @@ async fn main() {
     graph.add_edge("C", "D").unwrap();
     graph.add_edge("D", "end").unwrap();
 
-    // // 使用 Runner 执行图
-    let mut runner = Runner::new();
+    let graph_json = graph.to_json();
+    println!("Graph JSON: {}", graph_json);
 
-    let r = runner.run(&mut graph).await.unwrap();
+    let ggg = Graph::from_json(&graph_json).unwrap();
+    println!("Graph from JSON: {:#?}", ggg);
+
+    let r = Workflow::start(ggg).await.unwrap();
     println!("Graph execution result: {:?}", r);
 }

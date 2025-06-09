@@ -1,0 +1,157 @@
+{
+	"nodes": {
+		"end": {
+			"id": "end",
+			"node_type": {
+				"Data": "Identity"
+			},
+			"data": null,
+			"processors": {
+				"input": null,
+				"output": null
+			},
+			"input_id": null,
+			"output_id": null
+		},
+		"start": {
+			"id": "start",
+			"node_type": {
+				"Data": "Input"
+			},
+			"data": {
+				"input": {
+					"Single": {
+						"Text": "A"
+					}
+				}
+			},
+			"processors": {
+				"input": null,
+				"output": null
+			},
+			"input_id": null,
+			"output_id": null
+		},
+		"Control1": {
+			"id": "Control1",
+			"node_type": {
+				"Control": "Branch"
+			},
+			"data": {
+				"branches": {
+					"A": "A",
+					"B": "B"
+				},
+				"default": "C"
+			},
+			"processors": {
+				"input": null,
+				"output": null
+			},
+			"input_id": null,
+			"output_id": null
+		},
+		"A": {
+			"id": "A",
+			"node_type": {
+				"Data": "Prompt"
+			},
+			"data": {
+				"template": "Node A Data"
+			},
+			"processors": {
+				"input": null,
+				"output": null
+			},
+			"input_id": null,
+			"output_id": null
+		},
+		"B": {
+			"id": "B",
+			"node_type": {
+				"Data": "Prompt"
+			},
+			"data": {
+				"template": "Node B Data"
+			},
+			"processors": {
+				"input": null,
+				"output": null
+			},
+			"input_id": "input1",
+			"output_id": "output1"
+		},
+		"C": {
+			"id": "C",
+			"node_type": {
+				"Data": "Prompt"
+			},
+			"data": {
+				"template": "Node C Data"
+			},
+			"processors": {
+				"input": null,
+				"output": null
+			},
+			"input_id": null,
+			"output_id": null
+		},
+		"D": {
+			"id": "D",
+			"node_type": {
+				"Data": "Identity"
+			},
+			"data": {},
+			"processors": {
+				"input": null,
+				"output": null
+			},
+			"input_id": null,
+			"output_id": null
+		}
+	},
+	"edges": [
+		{
+			"start": "start",
+			"end": "Control1",
+			"edge_type": "Data"
+		},
+		{
+			"start": "Control1",
+			"end": "A",
+			"edge_type": "Control"
+		},
+		{
+			"start": "Control1",
+			"end": "B",
+			"edge_type": "Control"
+		},
+		{
+			"start": "Control1",
+			"end": "C",
+			"edge_type": "Control"
+		},
+		{
+			"start": "A",
+			"end": "D",
+			"edge_type": "Data"
+		},
+		{
+			"start": "B",
+			"end": "D",
+			"edge_type": "Data"
+		},
+		{
+			"start": "C",
+			"end": "D",
+			"edge_type": "Data"
+		},
+		{
+			"start": "D",
+			"end": "end",
+			"edge_type": "Data"
+		}
+	],
+	"start_node": "start",
+	"end_node": "end"
+}
