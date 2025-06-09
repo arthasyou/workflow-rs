@@ -24,7 +24,7 @@ impl InputNode {
 
         Ok(Self {
             base: NodeBase::new(id, processor),
-            input: config.input,
+            input: config.input.into(),
         })
     }
 }

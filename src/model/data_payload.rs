@@ -18,6 +18,7 @@ pub struct File {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "value")]
 pub enum SingleData {
     /// 文本数据
     Text(String),
@@ -61,6 +62,7 @@ impl SingleData {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "data")]
 pub enum DataPayload {
     /// 单一数据类型
     Single(SingleData),
