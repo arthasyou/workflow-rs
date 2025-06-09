@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::model::DataPayload;
+use crate::{
+    model::DataPayload,
+    utils::serde_util::{deserialize_from_list, serialize_as_list},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputConfig {
@@ -23,6 +26,10 @@ pub struct ModelConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BranchConfig {
+    #[serde(
+        serialize_with = "serialize_as_list",
+        deserialize_with = "deserialize_from_list"
+    )]
     pub branches: HashMap<String, String>,
     pub default: Option<String>,
 }

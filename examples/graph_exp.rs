@@ -48,26 +48,17 @@ async fn main() {
             "Control1",
             NodeType::Control(ControlNode::Branch),
             json!({
-              "branches": {
-                "A": "A",
-                "B": "B"
-              },
-              "default": "C"
+                "branches": [
+                    { "key": "A", "value": "A" },
+                    { "key": "B", "value": "B" }
+                ],
+                "default": "C"
             }),
             DataProcessorMapping::default(),
             None,
             None,
         ),
-    ];
-
-    // 添加节点
-    for node in nodes {
-        graph.add_node(node).unwrap();
-    }
-
-    // 设置 Start 节点
-    graph
-        .set_start_node(Node::new(
+        Node::new(
             "start",
             NodeType::Data(DataNode::Input),
             serde_json::json!({
@@ -80,38 +71,39 @@ async fn main() {
             DataProcessorMapping::default(),
             None,
             None,
-        ))
-        .unwrap();
-
-    // 设置 End 节点
-    graph
-        .set_end_node(Node::new(
+        ),
+        Node::new(
             "end",
             NodeType::Data(DataNode::Identity),
             Value::Null,
             DataProcessorMapping::default(),
             None,
             None,
-        ))
-        .unwrap();
+        ),
+    ];
+
+    // 添加节点
+    for node in nodes {
+        graph.add_node(node).unwrap();
+    }
 
     // 添加边
-    graph.add_edge("start", "Control1").unwrap();
+    // graph.add_edge("start", "Control1").unwrap();
 
-    graph.add_edge("Control1", "A").unwrap();
-    graph.add_edge("Control1", "B").unwrap();
-    graph.add_edge("Control1", "C").unwrap();
+    // graph.add_edge("Control1", "A").unwrap();
+    // graph.add_edge("Control1", "B").unwrap();
+    // graph.add_edge("Control1", "C").unwrap();
 
-    graph.add_edge("A", "D").unwrap();
-    graph.add_edge("B", "D").unwrap();
-    graph.add_edge("C", "D").unwrap();
-    graph.add_edge("D", "end").unwrap();
+    // graph.add_edge("A", "D").unwrap();
+    // graph.add_edge("B", "D").unwrap();
+    // graph.add_edge("C", "D").unwrap();
+    // graph.add_edge("D", "end").unwrap();
 
     let graph_json = graph.to_json();
-    println!("Graph JSON: {}", graph_json);
+    // println!("Graph JSON: {}", graph_json);
 
     let ggg = Graph::from_json(&graph_json).unwrap();
-    println!("Graph from JSON: {:#?}", ggg);
+    // println!("Graph from JSON: {:#?}", ggg);
 
     let r = Workflow::start(ggg).await.unwrap();
     println!("Graph execution result: {:?}", r);

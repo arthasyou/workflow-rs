@@ -7,7 +7,6 @@ use crate::{
     error::{Error, Result},
     model::{graph_data::GraphData, node::Node},
 };
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Graph {
     /// 节点数据：持久化存储，保存节点的静态配置信息
@@ -165,6 +164,7 @@ impl Graph {
         };
 
         self.edges.push(Edge {
+            id: format!("{}-{}", start, end),
             start: start.to_string(),
             end: end.to_string(),
             edge_type,
@@ -361,23 +361,14 @@ impl Graph {
 
     /// 序列化为 JSON 字符串
     pub fn to_json(&self) -> String {
-        let graph_data = GraphData {
-            nodes: self.nodes.clone(),
-            edges: self.edges.clone(),
-            start_node: self.start_node.clone(),
-            end_node: self.end_node.clone(),
-        };
+        let graph_data: GraphData = self.clone().into();
         serde_json::to_string_pretty(&graph_data).expect("Failed to serialize Graph")
     }
 
     /// 从 JSON 字符串反序列化
     pub fn from_json(json: &str) -> Result<Self> {
         let graph_data: GraphData = serde_json::from_str(json)?;
-        let mut graph = Graph::new();
-        graph.nodes = graph_data.nodes;
-        graph.edges = graph_data.edges;
-        graph.start_node = graph_data.start_node;
-        graph.end_node = graph_data.end_node;
+        let mut graph: Graph = graph_data.into();
 
         // 调用 compile() 构建 predecessors 和 successors
         graph.compile()?;
