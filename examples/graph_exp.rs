@@ -12,52 +12,52 @@ async fn main() {
 
     // 定义节点 (不包含 Start 和 End)
     let nodes = vec![
-        // Node::new(
-        //     "A",
-        //     NodeType::Data(DataNode::Prompt),
-        //     json!({ "template": "Node A Data" }),
-        //     DataProcessorMapping::default(),
-        //     None,
-        //     None,
-        // ),
-        // Node::new(
-        //     "B",
-        //     NodeType::Data(DataNode::Prompt),
-        //     json!({ "template": "Node B Data" }),
-        //     DataProcessorMapping::default(),
-        //     Some("input1".to_string()),
-        //     Some("output1".to_string()),
-        // ),
-        // Node::new(
-        //     "C",
-        //     NodeType::Data(DataNode::Prompt),
-        //     json!({ "template": "Node C Data" }),
-        //     DataProcessorMapping::default(),
-        //     None,
-        //     None,
-        // ),
-        // Node::new(
-        //     "D",
-        //     NodeType::Data(DataNode::Identity),
-        //     json!({}),
-        //     DataProcessorMapping::default(),
-        //     None,
-        //     None,
-        // ),
-        // Node::new(
-        //     "Control1",
-        //     NodeType::Control(ControlNode::Branch),
-        //     json!({
-        //         "branches": [
-        //             { "key": "A", "value": "A" },
-        //             { "key": "B", "value": "B" }
-        //         ],
-        //         "default": "C"
-        //     }),
-        //     DataProcessorMapping::default(),
-        //     None,
-        //     None,
-        // ),
+        Node::new(
+            "A",
+            NodeType::Data(DataNode::Prompt),
+            json!({ "template": "Node A Data" }),
+            DataProcessorMapping::default(),
+            None,
+            None,
+        ),
+        Node::new(
+            "B",
+            NodeType::Data(DataNode::Prompt),
+            json!({ "template": "Node B Data" }),
+            DataProcessorMapping::default(),
+            Some("input1".to_string()),
+            Some("output1".to_string()),
+        ),
+        Node::new(
+            "C",
+            NodeType::Data(DataNode::Prompt),
+            json!({ "template": "Node C Data" }),
+            DataProcessorMapping::default(),
+            None,
+            None,
+        ),
+        Node::new(
+            "D",
+            NodeType::Data(DataNode::Identity),
+            json!({}),
+            DataProcessorMapping::default(),
+            None,
+            None,
+        ),
+        Node::new(
+            "Control1",
+            NodeType::Control(ControlNode::Branch),
+            json!({
+                "branches": [
+                    { "condition": "A", "nodeId": "A" },
+                    { "condition": "B", "nodeId": "B" }
+                ],
+                "default": "C"
+            }),
+            DataProcessorMapping::default(),
+            None,
+            None,
+        ),
         Node::new(
             "start",
             NodeType::Data(DataNode::Input),
@@ -90,16 +90,16 @@ async fn main() {
     }
 
     // 添加边
-    graph.add_edge("start", "end").unwrap();
+    graph.add_edge("start", "Control1").unwrap();
 
-    // graph.add_edge("Control1", "A").unwrap();
-    // graph.add_edge("Control1", "B").unwrap();
-    // graph.add_edge("Control1", "C").unwrap();
+    graph.add_edge("Control1", "A").unwrap();
+    graph.add_edge("Control1", "B").unwrap();
+    graph.add_edge("Control1", "C").unwrap();
 
-    // graph.add_edge("A", "D").unwrap();
-    // graph.add_edge("B", "D").unwrap();
-    // graph.add_edge("C", "D").unwrap();
-    // graph.add_edge("D", "end").unwrap();
+    graph.add_edge("A", "D").unwrap();
+    graph.add_edge("B", "D").unwrap();
+    graph.add_edge("C", "D").unwrap();
+    graph.add_edge("D", "end").unwrap();
 
     let graph_json = graph.to_json();
     println!("Graph JSON: {}", graph_json);

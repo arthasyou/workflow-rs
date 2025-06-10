@@ -25,13 +25,26 @@ pub struct ModelConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BranchPayload {
+    pub condition: String,
+    #[serde(rename = "nodeId")]
+    pub node_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BranchConfig {
-    #[serde(
-        serialize_with = "serialize_as_list",
-        deserialize_with = "deserialize_from_list"
-    )]
-    pub branches: HashMap<String, String>,
+    pub branches: Vec<BranchPayload>,
     pub default: Option<String>,
+}
+
+impl BranchConfig {
+    pub fn to_hashmap(&self) -> HashMap<String, String> {
+        let mut map = HashMap::new();
+        for branch in &self.branches {
+            map.insert(branch.condition.clone(), branch.node_id.clone());
+        }
+        map
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

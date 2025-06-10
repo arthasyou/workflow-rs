@@ -24,7 +24,7 @@ impl BranchNode {
 
         Ok(Self {
             base: NodeBase::new(id, processor),
-            branches: config.branches,
+            branches: config.to_hashmap(),
             default: config.default,
         })
     }
