@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{
-    model::DataPayload,
-    utils::serde_util::{deserialize_from_list, serialize_as_list},
-};
+use crate::model::DataPayload;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputConfig {
