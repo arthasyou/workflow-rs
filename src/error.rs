@@ -40,8 +40,13 @@ pub enum Error {
     #[error("Join task error: {0}")]
     JoinError(#[from] tokio::task::JoinError),
 
+    #[error("config error: {0}")]
+    ServiceError(#[from] service_utils_rs::error::Error),
+
     #[error("Other system error: {0}")]
     SystemError(String),
+    #[error("Unknown boxed error: {0}")]
+    Other(#[from] Box<dyn std::error::Error + Send + Sync>),
 }
 
 pub type Result<T> = core::result::Result<T, Error>;

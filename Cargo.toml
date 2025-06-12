@@ -29,3 +29,4 @@ tokio.workspace = true
 once_cell.workspace = true
 uuid.workspace = true
 futures-util.workspace = true
+service_utils_rs.workspace = true
