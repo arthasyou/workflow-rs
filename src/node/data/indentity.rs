@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
 
 use crate::{
-    error::Result,
     model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase},
 };
@@ -33,9 +33,7 @@ impl Executable for IdentityNode {
     ) -> Result<OutputData> {
         match input {
             Some(data) => Ok(OutputData::new_data(data)),
-            None => Err(crate::error::Error::ExecutionError(
-                "No input data provided".into(),
-            )),
+            None => Err(Error::ExecutionError("No input data provided".into())),
         }
     }
 }

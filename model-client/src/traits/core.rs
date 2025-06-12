@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use service_utils_rs::utils::ByteStream;
-
-use crate::error::Result; // Assumes ByteStream is defined elsewhere
+use workflow_error::Result;
 
 /// Trait for normal model inference
 #[async_trait]

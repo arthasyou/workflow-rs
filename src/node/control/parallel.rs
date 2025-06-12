@@ -3,10 +3,10 @@ use std::{collections::HashMap, sync::Arc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::task::JoinSet;
+use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
 
 use crate::{
-    error::{Error, Result},
     model::{DataPayload, NodeOutput, OutputData, context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::ParallelConfig},
 };

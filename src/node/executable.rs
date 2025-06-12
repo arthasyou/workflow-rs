@@ -1,9 +1,9 @@
 use std::{fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
+use workflow_error::{Error, Result};
 
 use crate::{
-    error::{Error, Result},
     model::{Context, DataPayload, output::OutputData},
     node::NodeBase,
 };

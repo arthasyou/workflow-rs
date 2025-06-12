@@ -2,8 +2,7 @@ use std::io::Write;
 
 use futures_util::StreamExt;
 use service_utils_rs::utils::ByteStream;
-
-use crate::error::Result;
+use workflow_error::Result;
 
 pub async fn print_stream_chunks(mut stream: ByteStream) -> Result<()> {
     while let Some(chunk) = stream.next().await {

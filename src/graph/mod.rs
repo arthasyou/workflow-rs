@@ -1,10 +1,10 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use serde::{Deserialize, Serialize};
+use workflow_error::{Error, Result};
 
 use crate::{
     edge::{Edge, EdgeType},
-    error::{Error, Result},
     model::{graph_data::GraphData, node::Node},
 };
 #[derive(Serialize, Deserialize, Clone, Debug)]

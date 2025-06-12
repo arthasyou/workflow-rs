@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
+use workflow_error::Result;
+
 use super::{
     Executable,
     control::{AggregatorNode, BranchNode, ParallelNode, RepeatNode},
     data::{PromptNode, indentity::IdentityNode},
 };
 use crate::{
-    error::Result,
     model::node::{ControlNode, DataNode, Node, NodeType},
     node::data::input::InputNode,
 };

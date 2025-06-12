@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use serde_json::Value;
+use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
 
 use crate::{
-    error::{Error, Result},
     model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::RepeatConfig},
 };

@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use service_utils_rs::utils::{ByteStream, Request};
-
-use crate::error::Result;
+use workflow_error::Result;
 
 /// Role in chat messages.
 #[derive(Debug, Clone, Serialize, Deserialize)]

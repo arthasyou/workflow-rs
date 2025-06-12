@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
 
 use crate::{
-    error::{Error, Result},
     model::{
         OutputData,
         context::Context,

@@ -3,8 +3,9 @@ use std::{
     sync::Arc,
 };
 
+use workflow_error::{Error, Result};
+
 use crate::{
-    error::{Error, Result},
     graph::Graph,
     model::{Context, DataPayload, OutputData},
 };

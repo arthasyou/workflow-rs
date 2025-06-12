@@ -4,7 +4,6 @@
 // use serde_json::Value;
 
 pub mod edge;
-pub mod error;
 pub mod graph;
 pub mod inputs;
 pub mod model;
@@ -16,10 +15,11 @@ pub mod utils;
 
 use model::DataPayload;
 
-use crate::{error::Result, graph::Graph, runner::Runner};
+use crate::{graph::Graph, runner::Runner};
 
 /// Workflow 模块：封装 Graph → Context → Runner 执行链路
 pub struct Workflow;
+use workflow_error::Result;
 
 impl Workflow {
     /// 启动工作流：根据 Graph 生成 Context，并执行 Runner

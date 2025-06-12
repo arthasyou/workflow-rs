@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use service_utils_rs::utils::ByteStream;
+use workflow_error::Result;
 
 use crate::{
-    error::Result,
     sdk::openai::{ChatMessage, ChatResponse, OpenAIClient},
     traits::{ModelClient, StreamModelClient},
 };
