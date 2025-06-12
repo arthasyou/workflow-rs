@@ -121,51 +121,87 @@ impl Runner {
 
             let output = node.execute(input_value, context.clone()).await?;
 
-            match output {
-                OutputData::Control(next_node_id) => {
-                    // TODO 这段代码还是有点问题，可能需要重构 predecessors 的逻辑
-                    if let Some(successors) = graph.successors.get(&current) {
-                        for succ in successors {
-                            if let Some(p) = self.pending_predecessors.get_mut(succ) {
-                                *p -= 1;
-                            }
-                            if succ != &next_node_id {
-                                self.mark_branch_skipped(succ, graph);
-                            }
-                        }
-                    }
-                    if context.get_node(&next_node_id).is_some() {
-                        self.queue.push_back(next_node_id.clone());
-                        self.input_refs
-                            .insert(next_node_id.clone(), current.clone());
-                    }
-                }
-                OutputData::Data(data_payload) => {
-                    self.set_output(&current, data_payload.clone());
-
-                    // 直接从 `graph.successors` 读取后继节点
-                    if let Some(successors) = graph.successors.get(&current) {
-                        for next_node_id in successors {
-                            let pred_count =
-                                self.pending_predecessors.get_mut(next_node_id).unwrap();
-                            if *pred_count > 0 {
-                                *pred_count -= 1;
-                            }
-
-                            self.input_refs
-                                .insert(next_node_id.clone(), current.clone());
-
-                            if *pred_count == 0 {
-                                self.queue.push_back(next_node_id.clone());
-                            }
-                        }
-                    }
-                }
-                OutputData::Parallel(_node_outputs) => todo!(),
-            }
+            self.handle_output(&current, output, graph, &context)?;
         }
 
         Ok(())
+    }
+
+    /// 处理节点输出
+    fn handle_output(
+        &mut self,
+        current: &str,
+        output: OutputData,
+        graph: &Graph,
+        context: &Arc<Context>,
+    ) -> Result<()> {
+        match output {
+            OutputData::Control(next_node_id) => {
+                self.handle_control_output(current, &next_node_id, graph, context)?;
+            }
+            OutputData::Data(data_payload) => {
+                self.handle_data_output(current, data_payload, graph)?;
+            }
+            OutputData::Parallel(_node_outputs) => {
+                self.handle_parallel_output();
+            }
+        }
+        Ok(())
+    }
+
+    fn handle_control_output(
+        &mut self,
+        current: &str,
+        next_node_id: &str,
+        graph: &Graph,
+        context: &Arc<Context>,
+    ) -> Result<()> {
+        if let Some(successors) = graph.successors.get(current) {
+            for succ in successors {
+                if let Some(p) = self.pending_predecessors.get_mut(succ) {
+                    *p -= 1;
+                }
+                if succ != next_node_id {
+                    self.mark_branch_skipped(succ, graph);
+                }
+            }
+        }
+        if context.get_node(next_node_id).is_some() {
+            self.queue.push_back(next_node_id.to_string());
+            self.input_refs
+                .insert(next_node_id.to_string(), current.to_string());
+        }
+        Ok(())
+    }
+
+    fn handle_data_output(
+        &mut self,
+        current: &str,
+        data_payload: DataPayload,
+        graph: &Graph,
+    ) -> Result<()> {
+        self.set_output(current, data_payload.clone());
+        if let Some(successors) = graph.successors.get(current) {
+            for next_node_id in successors {
+                let pred_count = self
+                    .pending_predecessors
+                    .get_mut(next_node_id)
+                    .expect("Expected predecessor count");
+                if *pred_count > 0 {
+                    *pred_count -= 1;
+                }
+                self.input_refs
+                    .insert(next_node_id.clone(), current.to_string());
+                if *pred_count == 0 {
+                    self.queue.push_back(next_node_id.clone());
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn handle_parallel_output(&self) {
+        todo!()
     }
 }
 

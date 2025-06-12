@@ -5,7 +5,7 @@ pub mod input;
 pub mod node;
 pub mod output;
 
-pub use context::Context;
+pub use context::{Context, RunContext};
 pub use data_payload::DataPayload;
 pub use input::NodeInput;
 pub use node::Node;

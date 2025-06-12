@@ -9,7 +9,7 @@ use super::{
 };
 use crate::{
     model::node::{ControlNode, DataNode, Node, NodeType},
-    node::data::input::InputNode,
+    node::data::{input::InputNode, llm::LLMNode},
 };
 
 /// 构建节点实例
@@ -25,6 +25,7 @@ pub fn build_node(node: &Node) -> Result<Arc<dyn Executable>> {
             DataNode::Input => Box::new(InputNode::new(id, data, processors)?),
             DataNode::Prompt => Box::new(PromptNode::new(id, data, processors)?),
             DataNode::Identity => Box::new(IdentityNode::new(id, data, processors)?),
+            DataNode::LLM => Box::new(LLMNode::new(id, data, processors)?),
         },
         NodeType::Control(orch_node) => match orch_node {
             ControlNode::Branch => Box::new(BranchNode::new(id, data, processors)?),

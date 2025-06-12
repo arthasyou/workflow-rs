@@ -12,7 +12,7 @@ use crate::{
     runner::Runner,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct SubGraphNode {
     pub base: NodeBase,
     pub subgraph: Graph,

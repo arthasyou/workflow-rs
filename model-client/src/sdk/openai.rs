@@ -18,6 +18,15 @@ pub struct ChatMessage {
     pub content: String,
 }
 
+impl ChatMessage {
+    pub fn user(content: &str) -> Self {
+        Self {
+            role: Role::User,
+            content: content.to_string(),
+        }
+    }
+}
+
 /// Request body for chat completion.
 
 #[derive(Debug, Deserialize)]
@@ -58,6 +67,15 @@ pub struct ChatResponse {
     pub model: String,
     pub choices: Vec<ChatChoice>,
     pub usage: Option<ChatUsage>,
+}
+
+impl ChatResponse {
+    /// Get the first choice's message content.
+    pub fn first_message(&self) -> Option<String> {
+        self.choices
+            .first()
+            .map(|choice| choice.message.content.clone())
+    }
 }
 
 /// ChatCompletion client using your wrapped Request.

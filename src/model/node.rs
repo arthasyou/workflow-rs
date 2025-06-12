@@ -12,6 +12,7 @@ pub enum DataNode {
     Input,
     Prompt,
     Identity,
+    LLM,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,6 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
 
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::task::JoinSet;
 use workflow_error::{Error, Result};
@@ -11,7 +10,7 @@ use crate::{
     node::{Executable, NodeBase, config::ParallelConfig},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct ParallelNode {
     pub base: NodeBase,
     pub branches: HashMap<String, String>, // key: 名称, value: 节点ID

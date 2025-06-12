@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
@@ -14,7 +13,7 @@ use crate::{
 };
 
 /// PromptNode 节点，用于接收输入并返回处理后的输出
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct PromptNode {
     base: NodeBase,
     template: String,

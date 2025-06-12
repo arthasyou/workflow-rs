@@ -44,3 +44,14 @@ impl Context {
         self.metadata.get(key)
     }
 }
+
+/// 接收 token 的推送目标接口，由外部系统实现（如 SSE/WebSocket）
+pub trait TokenSink: Send + Sync {
+    fn push_token(&self, token: &str);
+}
+
+/// 运行期上下文，包含可选的 token sink 用于推流
+#[derive(Default, Clone)]
+pub struct RunContext {
+    pub token_sink: Option<Arc<dyn TokenSink>>,
+}

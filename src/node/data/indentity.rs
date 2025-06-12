@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
@@ -11,7 +10,7 @@ use crate::{
 };
 
 /// IdentityNode 节点：输入即输出，无处理逻辑
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct IdentityNode {
     base: NodeBase,
 }

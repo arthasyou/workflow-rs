@@ -3,10 +3,11 @@ use std::{
     sync::Arc,
 };
 
+use workflow_error::{Error, Result};
+
 use crate::{
-    error::{Error, Result},
     graph::Graph,
-    model::{Context, DataPayload, OutputData},
+    model::{Context, DataPayload, Node, OutputData},
 };
 
 /// Runner 负责调度节点执行，管理节点间的数据传递与控制流
@@ -89,12 +90,24 @@ impl Runner {
                 .insert(node_id.clone(), pred_count);
 
             if pred_count == 0 {
-                self.inputs.insert(node_id.clone(), DataPayload::default());
+                // self.inputs.insert(node_id.clone(), DataPayload::default());
                 self.queue.push_back(node_id.clone());
             }
         }
 
         Ok(())
+    }
+
+    fn mark_branch_skipped(&mut self, node_id: &str, graph: &Graph) {
+        if let Some(successors) = graph.successors.get(node_id) {
+            for succ in successors {
+                if let Some(pred_count) = self.pending_predecessors.get_mut(succ) {
+                    if *pred_count > 0 {
+                        *pred_count -= 1;
+                    }
+                }
+            }
+        }
     }
 
     /// 执行所有节点
@@ -110,8 +123,21 @@ impl Runner {
 
             match output {
                 OutputData::Control(next_node_id) => {
+                    // TODO 这段代码还是有点问题，可能需要重构 predecessors 的逻辑
+                    if let Some(successors) = graph.successors.get(&current) {
+                        for succ in successors {
+                            if let Some(p) = self.pending_predecessors.get_mut(succ) {
+                                *p -= 1;
+                            }
+                            if succ != &next_node_id {
+                                self.mark_branch_skipped(succ, graph);
+                            }
+                        }
+                    }
                     if context.get_node(&next_node_id).is_some() {
                         self.queue.push_back(next_node_id.clone());
+                        self.input_refs
+                            .insert(next_node_id.clone(), current.clone());
                     }
                 }
                 OutputData::Data(data_payload) => {
@@ -141,4 +167,15 @@ impl Runner {
 
         Ok(())
     }
+}
+
+/// 合并两个 `DataPayload` 数据，用于累积多个输入数据。
+pub fn merge_inputs(existing: DataPayload, new_data: DataPayload) -> DataPayload {
+    let combined = existing.merge(new_data);
+    combined
+}
+
+/// 检查节点是否是控制节点 (如 Branch, Repeat, Parallel)
+pub fn is_control_node(node: &Node) -> bool {
+    node.is_control_node()
 }

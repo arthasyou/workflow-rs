@@ -1,6 +1,12 @@
+use core::str;
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
+use model_client::{
+    clients::openai::OpenAITextClient,
+    sdk::openai::{ChatMessage, ChatResponse},
+    traits::ModelClient,
+};
+use serde::Deserialize;
 use serde_json::Value;
 use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
@@ -15,18 +21,19 @@ use crate::{
     node::{Executable, NodeBase},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
+struct LLMNodeConfig {
+    base_url: String,
+    api_key: String,
+    model: String,
+    system_prompt: Option<String>,
+    temperature: Option<f32>,
+    top_p: Option<f32>,
+}
+
+#[derive(Clone)]
 pub struct LLMNode {
     base: NodeBase,
-
-    /// 模型名称，如 "gpt-3.5-turbo"、"qwen-plus"
-    model: String,
-
-    /// LLM 接口的 base URL
-    api_base: String,
-
-    /// API Key，用于认证（可选）
-    api_key: Option<String>,
 
     /// 系统提示词（system prompt）
     system_prompt: Option<String>,
@@ -36,19 +43,34 @@ pub struct LLMNode {
 
     /// Top-p 采样
     top_p: Option<f32>,
+
+    model_client:
+        Arc<dyn ModelClient<Input = Vec<ChatMessage>, Output = ChatResponse> + Send + Sync>,
 }
 
 impl LLMNode {
-    pub fn new(id: &str, _data: Value, processor: &DataProcessorMapping) -> Result<Self> {
+    pub fn new(id: &str, data: Value, processor: &DataProcessorMapping) -> Result<Self> {
+        let config: LLMNodeConfig = serde_json::from_value(data)
+            .map_err(|_| Error::ExecutionError("Invalid data format for InputNode".into()))?;
+        let client = OpenAITextClient::new(&config.api_key, &config.base_url, &config.model)?;
+
         Ok(Self {
             base: NodeBase::new(id, processor),
-            model: "gpt-3.5-turbo".to_string(),
-            api_base: "".to_string(),
-            api_key: None,
-            system_prompt: None,
-            temperature: None,
-            top_p: None,
+            system_prompt: config.system_prompt,
+            temperature: config.temperature,
+            top_p: config.top_p,
+            model_client: Arc::new(client),
         })
+    }
+}
+
+impl std::fmt::Debug for LLMNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LLMNode")
+            .field("system_prompt", &self.system_prompt)
+            .field("temperature", &self.temperature)
+            .field("top_p", &self.top_p)
+            .finish()
     }
 }
 
@@ -66,26 +88,30 @@ impl Executable for LLMNode {
             }
         };
 
-        // TODO: 实际 LLM 调用（此处留作占位）
-        let response = call_llm_model(&input).await?;
+        let msg = data_payload_to_message(&input)?;
+        let r = self.model_client.infer(msg).await?;
+        let response = match r.first_message() {
+            Some(content) => DataPayload::new_single(SingleData::Text(content)),
+            None => {
+                return Err(Error::ExecutionError(
+                    "LLMNode received empty response".into(),
+                ));
+            }
+        };
 
         Ok(OutputData::new_data(response))
     }
 }
 
-/// 模拟或集成实际 LLM 请求的函数
-async fn call_llm_model(input: &DataPayload) -> Result<DataPayload> {
-    // TODO: 根据 input.prompt 调用实际模型，例如 OpenAI/Qwen
-    // let prompt = match input {
-    //     DataPayload::Single { value, .. } => value.clone(),
-    //     _ => {
-    //         return Err(Error::ExecutionError(
-    //             "Unsupported input format for LLMNode".into(),
-    //         ));
-    //     }
-    // };
+fn data_payload_to_message(input: &DataPayload) -> Result<Vec<ChatMessage>> {
+    let prompt = match input {
+        DataPayload::Single(SingleData::Text(value)) => value.clone(),
+        _ => {
+            return Err(Error::ExecutionError(
+                "Unsupported input format for LLMNode".into(),
+            ));
+        }
+    };
 
-    let prompt = "prompt";
-    let simulated = format!("LLM回答：{}", prompt);
-    Ok(DataPayload::new_single(SingleData::new_text(&simulated)))
+    Ok(vec![ChatMessage::user(&prompt)])
 }

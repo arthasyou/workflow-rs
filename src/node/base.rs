@@ -24,7 +24,7 @@ impl Default for NodeState {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct NodeBase {
     pub id: String,
     pub state: NodeState,
