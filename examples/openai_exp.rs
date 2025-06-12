@@ -1,12 +1,8 @@
-use std::{io::Write, time::Duration};
-
-use futures_util::StreamExt;
 use model_client::{
     clients::openai::OpenAITextClient,
     sdk::openai::{ChatMessage, Role},
     traits::{ModelClient, StreamModelClient},
 };
-use tokio::time::sleep;
 use workflow_rs::utils::stream_util::print_stream_chunks;
 
 #[tokio::main]
