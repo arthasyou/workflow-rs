@@ -1399,9 +1399,9 @@ dependencies = [
 
 [[package]]
 name = "service_utils_rs"
-version = "0.3.19"
+version = "0.3.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18780f38b49c36b1f4a72c1ae4ba6c33a89d21b445d901373002e52c374b6136"
+checksum = "f5c46e3451a52c4c0782859ace59b64c61351377b400ba9babb460a313520ae6"
 dependencies = [
  "byteorder",
  "bytes",
