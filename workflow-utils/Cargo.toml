@@ -1,0 +1,12 @@
+[package]
+name = "workflow-utils"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+futures-util.workspace = true
+
+workflow-error = { path = "../workflow-error" }
+service_utils_rs.workspace = true

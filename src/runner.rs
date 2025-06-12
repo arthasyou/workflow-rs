@@ -7,7 +7,7 @@ use workflow_error::{Error, Result};
 
 use crate::{
     graph::Graph,
-    model::{Context, DataPayload, OutputData},
+    model::{Context, DataPayload, Node, OutputData},
 };
 
 /// Runner 负责调度节点执行，管理节点间的数据传递与控制流
@@ -167,4 +167,15 @@ impl Runner {
 
         Ok(())
     }
+}
+
+/// 合并两个 `DataPayload` 数据，用于累积多个输入数据。
+pub fn merge_inputs(existing: DataPayload, new_data: DataPayload) -> DataPayload {
+    let combined = existing.merge(new_data);
+    combined
+}
+
+/// 检查节点是否是控制节点 (如 Branch, Repeat, Parallel)
+pub fn is_control_node(node: &Node) -> bool {
+    node.is_control_node()
 }

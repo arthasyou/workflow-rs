@@ -4,7 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = [".", "workflow_macro", "model-client", "workflow-error"]
+members = [
+    ".",
+    "workflow_macro",
+    "model-client",
+    "workflow-error",
+    "workflow-utils",
+]
 
 [workspace.dependencies]
 async-trait = "0.1"
@@ -21,6 +27,7 @@ service_utils_rs = { version = "0.3.20", features = ["request"] }
 workflow_macro = { path = "./workflow_macro" }
 model-client = { path = "./model-client" }
 workflow-error = { path = "./workflow-error" }
+workflow-utils = { path = "./workflow-utils" }
 
 serde.workspace = true
 serde_json.workspace = true

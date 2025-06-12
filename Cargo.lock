@@ -2139,7 +2139,19 @@ dependencies = [
  "tokio",
  "uuid",
  "workflow-error",
+ "workflow-utils",
  "workflow_macro",
+]
+
+[[package]]
+name = "workflow-utils"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "serde",
+ "serde_json",
+ "service_utils_rs",
+ "workflow-error",
 ]
 
 [[package]]

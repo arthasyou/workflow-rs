@@ -3,7 +3,7 @@ use model_client::{
     sdk::openai::{ChatMessage, Role},
     traits::{ModelClient, StreamModelClient},
 };
-use workflow_rs::utils::stream_util::print_stream_chunks;
+use workflow_utils::stream_util::print_stream_chunks;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
