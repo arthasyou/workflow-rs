@@ -63,10 +63,13 @@ async fn main() {
             NodeType::Data(DataNode::Input),
             serde_json::json!({
                 "input": {
-                    "kind": "Single",
-                    "data": {
-                        "type": "Text",
-                        "value": "who are you?"
+                    "data_type": "Text",
+                    "value": {
+                        "type": "Single",
+                        "value": {
+                            "type": "Text",
+                            "value": "Hello, this is a test input for the LLM node."
+                        }
                     }
                 }
             }),

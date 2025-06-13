@@ -10,6 +10,7 @@ pub struct FlowData {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "value")]
 pub enum FlowValue {
     Single(SingleData),
     Collection(Vec<SingleData>),
