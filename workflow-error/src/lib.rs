@@ -43,6 +43,9 @@ pub enum Error {
     #[error("config error: {0}")]
     ServiceError(#[from] service_utils_rs::error::Error),
 
+    #[error("Mismatched flow data type")]
+    FlowTypeMismatch,
+
     #[error("Other system error: {0}")]
     SystemError(String),
     #[error("Unknown boxed error: {0}")]

@@ -12,7 +12,7 @@ pub mod processor;
 pub mod runner;
 pub mod storage;
 
-use model::DataPayload;
+use flow_data::FlowData;
 
 use crate::{graph::Graph, runner::Runner};
 
@@ -22,7 +22,7 @@ use workflow_error::Result;
 
 impl Workflow {
     /// 启动工作流：根据 Graph 生成 Context，并执行 Runner
-    pub async fn start(mut graph: Graph) -> Result<DataPayload> {
+    pub async fn start(mut graph: Graph) -> Result<FlowData> {
         // 构建 Runner 并执行
         let mut runner = Runner::new();
         runner.run(&mut graph).await

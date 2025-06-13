@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
+use flow_data::{FlowData, output::FlowOutput};
 use serde_json::Value;
 use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
 
 use crate::{
-    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
+    model::{context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::InputConfig},
 };
 
@@ -13,7 +14,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct InputNode {
     base: NodeBase,
-    input: DataPayload,
+    input: FlowData,
 }
 
 impl InputNode {
@@ -32,9 +33,9 @@ impl InputNode {
 impl Executable for InputNode {
     async fn core_execute(
         &self,
-        _input: Option<DataPayload>,
+        _input: Option<FlowData>,
         _context: Arc<Context>,
-    ) -> Result<OutputData> {
-        Ok(OutputData::new_data(self.input.clone()))
+    ) -> Result<FlowOutput> {
+        Ok(self.input.clone().into())
     }
 }

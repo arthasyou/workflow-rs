@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
+use flow_data::{FlowData, output::FlowOutput};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    model::{DataPayload, OutputData, node::DataProcessorMapping},
+    model::node::DataProcessorMapping,
     processor::{InputProcessor, OutputProcessor, PROCESSOR_REGISTRY},
 };
 
@@ -46,13 +47,13 @@ impl Default for NodeBase {
 }
 
 impl NodeBase {
-    pub async fn process_input(&self, input: Option<DataPayload>) -> Option<DataPayload> {
+    pub async fn process_input(&self, input: Option<FlowData>) -> Option<FlowData> {
         if let Some(name) = &self.input_processor_name {
             if let Some(processor) = PROCESSOR_REGISTRY.get_input(name) {
                 match input {
                     Some(data) => {
                         // 如果输入数据存在，使用处理器处理
-                        return processor.process(&data).await;
+                        return processor.process(data).await;
                     }
                     None => {
                         // 如果没有输入数据，直接返回 None
@@ -64,10 +65,10 @@ impl NodeBase {
         input
     }
 
-    pub async fn process_output(&self, output: OutputData) -> Option<OutputData> {
+    pub async fn process_output(&self, output: FlowOutput) -> Option<FlowOutput> {
         if let Some(name) = &self.output_processor_name {
             if let Some(processor) = PROCESSOR_REGISTRY.get_output(name) {
-                return processor.process(&output).await;
+                return processor.process(output).await;
             }
         }
         Some(output)

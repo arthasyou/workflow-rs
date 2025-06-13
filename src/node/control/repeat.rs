@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
+use flow_data::{FlowData, output::FlowOutput};
 use serde_json::Value;
 use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
 
 use crate::{
-    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
+    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping, output},
     node::{Executable, NodeBase, config::RepeatConfig},
 };
 
@@ -33,32 +34,26 @@ impl RepeatNode {
 impl Executable for RepeatNode {
     async fn core_execute(
         &self,
-        input: Option<DataPayload>,
+        input: Option<FlowData>,
         context: Arc<Context>,
-    ) -> Result<OutputData> {
-        let mut current_input = input;
+    ) -> Result<FlowOutput> {
+        match input {
+            Some(data) => {
+                let mut current_input = data;
+                for _ in 0 .. self.max_iterations {
+                    let child_node = context
+                        .get_node(&self.child_id)
+                        .ok_or_else(|| Error::NodeNotFound(self.child_id.clone()))?;
 
-        for _ in 0 .. self.max_iterations {
-            let child_node = context
-                .get_node(&self.child_id)
-                .ok_or_else(|| Error::NodeNotFound(self.child_id.clone()))?;
+                    let output = child_node
+                        .execute(Some(current_input), context.clone())
+                        .await?;
+                    current_input = output.into_data()?;
+                }
 
-            let output = child_node
-                .execute(current_input.clone(), context.clone())
-                .await?;
-
-            if let OutputData::Data(data) = output {
-                current_input = Some(data);
-            } else {
-                return Err(Error::ExecutionError(
-                    "Invalid output from child node".into(),
-                ));
+                Ok(current_input.into())
             }
-        }
-
-        match current_input {
-            None => Err(Error::ExecutionError("No input data provided".into())),
-            Some(data) => Ok(OutputData::Data(data)),
+            None => return Err(Error::ExecutionError("No input data provided".into())),
         }
     }
 }

@@ -1,14 +1,12 @@
 use std::sync::Arc;
 
+use flow_data::{FlowData, output::FlowOutput};
 use serde_json::Value;
 use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
 
 use crate::{
-    model::{
-        DataPayload, OutputData, context::Context, data_payload::SingleData,
-        node::DataProcessorMapping,
-    },
+    model::{context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::PromptConfig},
 };
 
@@ -41,14 +39,12 @@ impl PromptNode {
 
 #[impl_executable]
 impl Executable for PromptNode {
-    /// 核心执行逻辑
     async fn core_execute(
         &self,
-        _input: Option<DataPayload>,
+        _input: Option<FlowData>,
         _context: Arc<Context>,
-    ) -> Result<OutputData> {
-        let response = &self.template;
-        let text = SingleData::new_text(response);
-        Ok(OutputData::new_data(DataPayload::new_single(text)))
+    ) -> Result<FlowOutput> {
+        let data = FlowData::new_text(&self.template);
+        Ok(data.into())
     }
 }

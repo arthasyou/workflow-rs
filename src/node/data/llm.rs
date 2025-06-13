@@ -1,6 +1,7 @@
 use core::str;
 use std::sync::Arc;
 
+use flow_data::{FlowData, output::FlowOutput};
 use model_client::{
     clients::openai::OpenAITextClient,
     sdk::openai::{ChatMessage, ChatResponse},
@@ -12,12 +13,7 @@ use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
 
 use crate::{
-    model::{
-        OutputData,
-        context::Context,
-        data_payload::{DataPayload, SingleData},
-        node::DataProcessorMapping,
-    },
+    model::{context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase},
 };
 
@@ -78,9 +74,9 @@ impl std::fmt::Debug for LLMNode {
 impl Executable for LLMNode {
     async fn core_execute(
         &self,
-        input: Option<DataPayload>,
+        input: Option<FlowData>,
         _context: Arc<Context>,
-    ) -> Result<OutputData> {
+    ) -> Result<FlowOutput> {
         let input = match input {
             Some(data) => data,
             None => {
@@ -91,7 +87,7 @@ impl Executable for LLMNode {
         let msg = data_payload_to_message(&input)?;
         let r = self.model_client.infer(msg).await?;
         let response = match r.first_message() {
-            Some(content) => DataPayload::new_single(SingleData::Text(content)),
+            Some(content) => FlowData::new_text(&content),
             None => {
                 return Err(Error::ExecutionError(
                     "LLMNode received empty response".into(),
@@ -99,19 +95,11 @@ impl Executable for LLMNode {
             }
         };
 
-        Ok(OutputData::new_data(response))
+        Ok(response.into())
     }
 }
 
-fn data_payload_to_message(input: &DataPayload) -> Result<Vec<ChatMessage>> {
-    let prompt = match input {
-        DataPayload::Single(SingleData::Text(value)) => value.clone(),
-        _ => {
-            return Err(Error::ExecutionError(
-                "Unsupported input format for LLMNode".into(),
-            ));
-        }
-    };
-
-    Ok(vec![ChatMessage::user(&prompt)])
+fn data_payload_to_message(input: &FlowData) -> Result<Vec<ChatMessage>> {
+    let prompt = input.as_text()?;
+    Ok(vec![ChatMessage::user(prompt)])
 }

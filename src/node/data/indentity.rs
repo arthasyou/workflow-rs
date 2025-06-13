@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
+use flow_data::{FlowData, output::FlowOutput};
 use serde_json::Value;
 use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
 
 use crate::{
-    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
+    model::{context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase},
 };
 
@@ -27,11 +28,11 @@ impl IdentityNode {
 impl Executable for IdentityNode {
     async fn core_execute(
         &self,
-        input: Option<DataPayload>,
+        input: Option<FlowData>,
         _context: Arc<Context>,
-    ) -> Result<OutputData> {
+    ) -> Result<FlowOutput> {
         match input {
-            Some(data) => Ok(OutputData::new_data(data)),
+            Some(data) => Ok(data.into()),
             None => Err(Error::ExecutionError("No input data provided".into())),
         }
     }

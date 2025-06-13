@@ -1,14 +1,15 @@
 use async_trait::async_trait;
+use flow_data::FlowData;
 
-use crate::{model::DataPayload, processor::Processor};
+use crate::processor::Processor;
 
 /// LoggingProcessor 示例
 pub struct LoggingProcessor;
 
 #[async_trait]
-impl Processor<DataPayload> for LoggingProcessor {
-    async fn process(&self, data: &DataPayload) -> Option<DataPayload> {
+impl Processor<FlowData> for LoggingProcessor {
+    async fn process(&self, data: FlowData) -> Option<FlowData> {
         println!("Logging Input: {:?}", data);
-        Some(data.clone())
+        Some(data)
     }
 }

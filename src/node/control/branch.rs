@@ -1,11 +1,12 @@
 use std::{collections::HashMap, sync::Arc};
 
+use flow_data::{FlowData, output::FlowOutput};
 use serde_json::Value;
 use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
 
 use crate::{
-    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping},
+    model::{context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::BranchConfig},
 };
 
@@ -33,9 +34,9 @@ impl BranchNode {
 impl Executable for BranchNode {
     async fn core_execute(
         &self,
-        input: Option<DataPayload>,
+        input: Option<FlowData>,
         _context: Arc<Context>,
-    ) -> Result<OutputData> {
+    ) -> Result<FlowOutput> {
         match input {
             None => Err(Error::ExecutionError("No input data provided".into())),
             Some(data) => {
@@ -49,9 +50,7 @@ impl Executable for BranchNode {
                     return Err(Error::NodeConfigMissing);
                 };
 
-                let output = OutputData::new_control(&next_node_id);
-
-                Ok(output)
+                Ok((next_node_id, data).into())
             }
         }
     }

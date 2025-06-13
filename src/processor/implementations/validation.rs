@@ -1,14 +1,15 @@
 use async_trait::async_trait;
+use flow_data::FlowData;
 
-use crate::{model::DataPayload, processor::Processor};
+use crate::processor::Processor;
 
 /// ValidationProcessor 示例
 pub struct ValidationProcessor;
 
 #[async_trait]
-impl Processor<DataPayload> for ValidationProcessor {
-    async fn process(&self, data: &DataPayload) -> Option<DataPayload> {
+impl Processor<FlowData> for ValidationProcessor {
+    async fn process(&self, data: FlowData) -> Option<FlowData> {
         println!("Validating Output: {:?}", data);
-        Some(data.clone())
+        Some(data)
     }
 }

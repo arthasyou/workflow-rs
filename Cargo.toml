@@ -10,6 +10,7 @@ members = [
     "model-client",
     "workflow-error",
     "workflow-utils",
+    "flow-data",
 ]
 
 [workspace.dependencies]
@@ -28,6 +29,7 @@ workflow_macro = { path = "./workflow_macro" }
 model-client = { path = "./model-client" }
 workflow-error = { path = "./workflow-error" }
 workflow-utils = { path = "./workflow-utils" }
+flow-data = { path = "./flow-data" }
 
 serde.workspace = true
 serde_json.workspace = true

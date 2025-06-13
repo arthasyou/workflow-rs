@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
+use flow_data::FlowData;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::model::DataPayload;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputConfig {
-    pub input: DataPayload,
+    pub input: FlowData,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

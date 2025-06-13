@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
+use flow_data::{FlowData, output::FlowOutput};
 use serde_json::Value;
 use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
@@ -31,10 +32,10 @@ impl AggregatorNode {
 impl Executable for AggregatorNode {
     async fn core_execute(
         &self,
-        input: Option<DataPayload>,
+        input: Option<FlowData>,
         context: Arc<Context>,
-    ) -> Result<OutputData> {
-        let mut aggregated = DataPayload::new_collection();
+    ) -> Result<FlowOutput> {
+        let mut aggregated = FlowData::new_collection();
 
         for (_key, node_id) in &self.branches {
             let node = context
@@ -43,15 +44,9 @@ impl Executable for AggregatorNode {
                 .clone();
 
             let output = node.execute(input.clone(), context.clone()).await?;
-
-            match output {
-                OutputData::Data(data_payload) => {
-                    aggregated = aggregated.merge(data_payload);
-                }
-                _ => {}
-            }
+            aggregated.merge_mut(output.into_data()?);
         }
 
-        Ok(OutputData::Data(aggregated))
+        Ok(aggregated.into())
     }
 }
