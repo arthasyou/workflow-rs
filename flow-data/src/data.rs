@@ -136,4 +136,32 @@ impl FlowData {
         }
         self
     }
+
+    pub fn into_text(self) -> Result<String> {
+        match self.value {
+            FlowValue::Single(SingleData::Text(s)) => Ok(s),
+            _ => Err(Error::FlowTypeMismatch),
+        }
+    }
+
+    pub fn into_number(self) -> Result<f64> {
+        match self.value {
+            FlowValue::Single(SingleData::Number(n)) => Ok(n),
+            _ => Err(Error::FlowTypeMismatch),
+        }
+    }
+
+    pub fn into_file(self) -> Result<FileValue> {
+        match self.value {
+            FlowValue::Single(SingleData::File(f)) => Ok(f),
+            _ => Err(Error::FlowTypeMismatch),
+        }
+    }
+
+    pub fn into_collection(self) -> Result<Vec<SingleData>> {
+        match self.value {
+            FlowValue::Collection(vec) => Ok(vec),
+            _ => Err(Error::FlowTypeMismatch),
+        }
+    }
 }
