@@ -2139,6 +2139,7 @@ name = "workflow-rs"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bytes",
  "flow-data",
  "futures-util",
  "model-client",
