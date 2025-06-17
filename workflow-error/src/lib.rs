@@ -46,6 +46,9 @@ pub enum Error {
     #[error("Mismatched flow data type")]
     FlowTypeMismatch,
 
+    #[error("Stream chunk error: {0}")]
+    StreamChunkError(String),
+
     #[error("Other system error: {0}")]
     SystemError(String),
     #[error("Unknown boxed error: {0}")]

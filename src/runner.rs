@@ -3,18 +3,14 @@ use std::{
     sync::Arc,
 };
 
-use bytes::Bytes;
 use flow_data::{
     FlowData, FlowOutputType,
     output::{ControlFlow, FlowOutput},
 };
-use futures_util::StreamExt;
-use tokio::sync::mpsc::Sender;
 use workflow_error::{Error, Result};
+use workflow_utils::stream_util::forward_and_collect_stream;
 
-use crate::{graph::Graph, model::Context};
-
-pub type StreamSender = Sender<(String, Bytes)>;
+use crate::{graph::Graph, model::Context, types::StreamSender};
 
 /// Runner 负责调度节点执行，管理节点间的数据传递与控制流
 pub struct Runner {
@@ -164,7 +160,10 @@ impl Runner {
             FlowOutputType::Parallel => {
                 self.handle_parallel_output();
             }
-            FlowOutputType::Stream => todo!(),
+            FlowOutputType::Stream => {
+                self.handle_stream_output(stream_tx, current, output)
+                    .await?;
+            }
         }
         Ok(())
     }
@@ -228,55 +227,12 @@ impl Runner {
     async fn handle_stream_output(
         &self,
         stream_tx: Option<StreamSender>,
-        current: String,
+        current: &str,
         output: FlowOutput,
     ) -> Result<()> {
-        if let Some(mut tx) = stream_tx.clone() {
+        if let Some(tx) = stream_tx.clone() {
             let stream = output.into_stream()?;
-
-            // 同时转发和收集 stream
-            let (tx_stream, mut rx_stream) =
-                tokio::sync::mpsc::unbounded_channel::<Result<Bytes>>();
-
-            // 分离任务：一边收集发给下一节点，一边通过 channel 转发出去
-            let forward_task = tokio::spawn({
-                let current = current.clone();
-                async move {
-                    while let Some(chunk) = rx_stream.recv().await {
-                        if let Ok(bytes) = chunk {
-                            if let Err(e) = tx.send((current.clone(), bytes)).await {
-                                return Err(Error::ExecutionError(format!(
-                                    "send stream error: {}",
-                                    e
-                                )));
-                            }
-                        }
-                    }
-                    Ok::<(), Error>(())
-                }
-            });
-
-            let mut collected_chunks = Vec::new();
-
-            let mut stream = Box::pin(stream);
-            while let Some(chunk) = stream.next().await {
-                match &chunk {
-                    Ok(bytes) => {
-                        tx_stream.send(Ok(bytes.clone())).ok(); // forward
-                        collected_chunks.push(bytes.clone()); // collect
-                    }
-                    Err(_e) => {
-                        // TODO: 处理错误
-                        // tx_stream.send(Err(e.clone())).ok();
-                    }
-                }
-            }
-
-            drop(tx_stream); // 关闭 forward 通道
-            forward_task.await??;
-
-            let bytes = Bytes::from_iter(collected_chunks.into_iter().flatten());
-            // self.set_output(current, FlowData::from(bytes));
+            let _r = forward_and_collect_stream(stream, tx, current).await?;
         }
 
         Ok(())

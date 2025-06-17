@@ -1,8 +1,12 @@
 use std::io::Write;
 
+use bytes::Bytes;
 use futures_util::StreamExt;
 use service_utils_rs::utils::ByteStream;
-use workflow_error::Result;
+use tokio::sync::mpsc::UnboundedSender;
+use workflow_error::{Error, Result};
+
+pub type StreamSender = UnboundedSender<(String, Bytes)>;
 
 pub async fn print_stream_chunks(mut stream: ByteStream) -> Result<()> {
     while let Some(chunk) = stream.next().await {
@@ -47,4 +51,29 @@ pub async fn print_stream_chunks(mut stream: ByteStream) -> Result<()> {
     }
 
     Ok(())
+}
+
+pub async fn forward_and_collect_stream(
+    mut stream: ByteStream,
+    tx: StreamSender,
+    node: &str,
+) -> Result<Bytes> {
+    let mut collected_chunks = Vec::new();
+
+    while let Some(chunk) = stream.next().await {
+        match &chunk {
+            Ok(bytes) => {
+                tx.send((node.to_owned(), bytes.clone())).ok(); // forward
+                collected_chunks.push(bytes.clone()); // collect
+            }
+            Err(e) => {
+                return Err(Error::StreamChunkError(format!(
+                    "stream chunk error: {}",
+                    e
+                )));
+            }
+        }
+    }
+
+    Ok(Bytes::from_iter(collected_chunks.into_iter().flatten()))
 }

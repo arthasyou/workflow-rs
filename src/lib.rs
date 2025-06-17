@@ -11,6 +11,7 @@ pub mod node;
 pub mod processor;
 pub mod runner;
 pub mod storage;
+pub mod types;
 
 use flow_data::FlowData;
 

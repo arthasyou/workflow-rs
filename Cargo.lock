@@ -2158,10 +2158,12 @@ dependencies = [
 name = "workflow-utils"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "futures-util",
  "serde",
  "serde_json",
  "service_utils_rs",
+ "tokio",
  "workflow-error",
 ]
 
