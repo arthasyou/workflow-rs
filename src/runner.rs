@@ -3,13 +3,18 @@ use std::{
     sync::Arc,
 };
 
+use bytes::Bytes;
 use flow_data::{
     FlowData, FlowOutputType,
     output::{ControlFlow, FlowOutput},
 };
+use futures_util::StreamExt;
+use tokio::sync::mpsc::Sender;
 use workflow_error::{Error, Result};
 
 use crate::{graph::Graph, model::Context};
+
+pub type StreamSender = Sender<(String, Bytes)>;
 
 /// Runner 负责调度节点执行，管理节点间的数据传递与控制流
 pub struct Runner {
@@ -68,11 +73,15 @@ impl Runner {
     }
 
     /// 运行图
-    pub async fn run(&mut self, graph: &mut Graph) -> Result<FlowData> {
+    pub async fn run(
+        &mut self,
+        graph: &mut Graph,
+        stream_tx: Option<StreamSender>,
+    ) -> Result<FlowData> {
         graph.compile()?;
         let context = Context::from_graph(graph);
         self.prepare(graph)?;
-        self.execute_all_nodes(graph, context).await?;
+        self.execute_all_nodes(graph, context, stream_tx).await?;
         let output = self.get_output("end")?;
         Ok(output.clone())
     }
@@ -112,7 +121,12 @@ impl Runner {
     }
 
     /// 执行所有节点
-    async fn execute_all_nodes(&mut self, graph: &Graph, context: Arc<Context>) -> Result<()> {
+    async fn execute_all_nodes(
+        &mut self,
+        graph: &Graph,
+        context: Arc<Context>,
+        stream_tx: Option<StreamSender>,
+    ) -> Result<()> {
         while let Some(current) = self.queue.pop_front() {
             let input_value = self.get_resolved_input(&current);
 
@@ -122,19 +136,21 @@ impl Runner {
 
             let output = node.execute(input_value, context.clone()).await?;
 
-            self.handle_output(&current, output, graph, &context)?;
+            self.handle_output(&current, output, graph, &context, stream_tx.clone())
+                .await?;
         }
 
         Ok(())
     }
 
     /// 处理节点输出
-    fn handle_output(
+    async fn handle_output(
         &mut self,
         current: &str,
         output: FlowOutput,
         graph: &Graph,
         context: &Arc<Context>,
+        stream_tx: Option<StreamSender>,
     ) -> Result<()> {
         match output.get_type() {
             FlowOutputType::Control => {
@@ -207,6 +223,63 @@ impl Runner {
 
     fn handle_parallel_output(&self) {
         todo!()
+    }
+
+    async fn handle_stream_output(
+        &self,
+        stream_tx: Option<StreamSender>,
+        current: String,
+        output: FlowOutput,
+    ) -> Result<()> {
+        if let Some(mut tx) = stream_tx.clone() {
+            let stream = output.into_stream()?;
+
+            // 同时转发和收集 stream
+            let (tx_stream, mut rx_stream) =
+                tokio::sync::mpsc::unbounded_channel::<Result<Bytes>>();
+
+            // 分离任务：一边收集发给下一节点，一边通过 channel 转发出去
+            let forward_task = tokio::spawn({
+                let current = current.clone();
+                async move {
+                    while let Some(chunk) = rx_stream.recv().await {
+                        if let Ok(bytes) = chunk {
+                            if let Err(e) = tx.send((current.clone(), bytes)).await {
+                                return Err(Error::ExecutionError(format!(
+                                    "send stream error: {}",
+                                    e
+                                )));
+                            }
+                        }
+                    }
+                    Ok::<(), Error>(())
+                }
+            });
+
+            let mut collected_chunks = Vec::new();
+
+            let mut stream = Box::pin(stream);
+            while let Some(chunk) = stream.next().await {
+                match &chunk {
+                    Ok(bytes) => {
+                        tx_stream.send(Ok(bytes.clone())).ok(); // forward
+                        collected_chunks.push(bytes.clone()); // collect
+                    }
+                    Err(_e) => {
+                        // TODO: 处理错误
+                        // tx_stream.send(Err(e.clone())).ok();
+                    }
+                }
+            }
+
+            drop(tx_stream); // 关闭 forward 通道
+            forward_task.await??;
+
+            let bytes = Bytes::from_iter(collected_chunks.into_iter().flatten());
+            // self.set_output(current, FlowData::from(bytes));
+        }
+
+        Ok(())
     }
 }
 
