@@ -49,6 +49,9 @@ pub enum Error {
     #[error("Stream chunk error: {0}")]
     StreamChunkError(String),
 
+    #[error("mcp error: {0}")]
+    McpError(#[from] mcp_error::Error),
+
     #[error("Other system error: {0}")]
     SystemError(String),
     #[error("Unknown boxed error: {0}")]

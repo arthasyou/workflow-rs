@@ -6,6 +6,7 @@
 pub mod edge;
 pub mod graph;
 pub mod inputs;
+pub mod mcp;
 pub mod model;
 pub mod node;
 pub mod processor;
