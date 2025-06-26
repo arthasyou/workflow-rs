@@ -29,14 +29,9 @@ pub fn build_node(node: &Node) -> Result<Arc<dyn Executable>> {
         },
         NodeType::Control(orch_node) => match orch_node {
             ControlNode::Branch => Box::new(BranchNode::new(id, data, processors)?),
-            // ControlNode::Parallel => Box::new(ParallelNode::new(id, data, processors)?),
+            ControlNode::Parallel => Box::new(ParallelNode::new(id, data, processors)?),
             ControlNode::Repeat => Box::new(RepeatNode::new(id, data, processors)?),
             ControlNode::Aggregator => Box::new(AggregatorNode::new(id, data, processors)?),
-            _ => {
-                return Err(workflow_error::Error::ExecutionError(
-                    "Unsupported control node type".into(),
-                ));
-            }
         },
     };
 

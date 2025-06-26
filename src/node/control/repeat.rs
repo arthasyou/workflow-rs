@@ -6,7 +6,7 @@ use workflow_error::{Error, Result};
 use workflow_macro::impl_executable;
 
 use crate::{
-    model::{DataPayload, OutputData, context::Context, node::DataProcessorMapping, output},
+    model::{context::Context, node::DataProcessorMapping},
     node::{Executable, NodeBase, config::RepeatConfig},
 };
 
