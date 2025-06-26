@@ -87,7 +87,7 @@ impl Executable for LLMNode {
         let msg = data_payload_to_message(&input)?;
         let r = self.model_client.infer(msg).await?;
         let response = match r.first_message() {
-            Some(content) => FlowData::new_text(&content),
+            Some(content) => FlowData::from(content),
             None => {
                 return Err(Error::ExecutionError(
                     "LLMNode received empty response".into(),

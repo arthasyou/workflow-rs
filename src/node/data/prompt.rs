@@ -44,7 +44,7 @@ impl Executable for PromptNode {
         _input: Option<FlowData>,
         _context: Arc<Context>,
     ) -> Result<FlowOutput> {
-        let data = FlowData::new_text(&self.template);
+        let data = FlowData::from(self.template.as_str());
         Ok(data.into())
     }
 }

@@ -51,7 +51,7 @@ impl McpNode {
             base: NodeBase::new(id, processor),
             client,
             call_name: config.call_name,
-            input_data: FlowData::new_raw_json(config.input)?,
+            input_data: FlowData::from(config.input),
         })
     }
 }
@@ -73,7 +73,7 @@ impl Executable for McpNode {
         );
 
         let resp = self.client.send_resquest(req).await?;
-        let result = FlowData::new_json(resp)?;
+        let result = FlowData::try_from_json(resp)?;
 
         Ok(result.into())
     }

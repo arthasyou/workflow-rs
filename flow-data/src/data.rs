@@ -34,30 +34,6 @@ pub struct FileValue {
 
 /// Constructors for FlowData.
 impl FlowData {
-    pub fn new_text(text: impl Into<String>) -> Self {
-        Self {
-            data_type: FlowDataType::Text,
-            value: FlowValue::Single(SingleData::Text(text.into())),
-        }
-    }
-
-    pub fn new_number(n: f64) -> Self {
-        Self {
-            data_type: FlowDataType::Number,
-            value: FlowValue::Single(SingleData::Number(n)),
-        }
-    }
-
-    pub fn new_file(path: impl Into<String>, file_type: FileType) -> Self {
-        Self {
-            data_type: FlowDataType::File,
-            value: FlowValue::Single(SingleData::File(FileValue {
-                path: path.into(),
-                file_type,
-            })),
-        }
-    }
-
     pub fn new_collection() -> Self {
         Self {
             data_type: FlowDataType::Collection,
@@ -65,19 +41,45 @@ impl FlowData {
         }
     }
 
-    pub fn new_json<T: Serialize>(value: T) -> Result<Self> {
+    pub fn try_from_json<T: Serialize>(value: T) -> Result<Self> {
         let json_value = serde_json::to_value(value)?;
         Ok(Self {
             data_type: FlowDataType::Json,
             value: FlowValue::Single(SingleData::Json(json_value)),
         })
     }
+}
 
-    pub fn new_raw_json(data: Value) -> Result<Self> {
-        Ok(Self {
+impl From<String> for FlowData {
+    fn from(text: String) -> Self {
+        Self {
+            data_type: FlowDataType::Text,
+            value: FlowValue::Single(SingleData::Text(text)),
+        }
+    }
+}
+
+impl From<&str> for FlowData {
+    fn from(s: &str) -> Self {
+        Self::from(s.to_string())
+    }
+}
+
+impl From<f64> for FlowData {
+    fn from(n: f64) -> Self {
+        Self {
+            data_type: FlowDataType::Number,
+            value: FlowValue::Single(SingleData::Number(n)),
+        }
+    }
+}
+
+impl From<Value> for FlowData {
+    fn from(val: Value) -> Self {
+        Self {
             data_type: FlowDataType::Json,
-            value: FlowValue::Single(SingleData::Json(data)),
-        })
+            value: FlowValue::Single(SingleData::Json(val)),
+        }
     }
 }
 
@@ -240,6 +242,13 @@ impl FlowData {
                 }
                 Ok(result)
             }
+            _ => Err(Error::FlowTypeMismatch),
+        }
+    }
+
+    pub fn into_json(self) -> Result<serde_json::Value> {
+        match self.value {
+            FlowValue::Single(SingleData::Json(json)) => Ok(json),
             _ => Err(Error::FlowTypeMismatch),
         }
     }
