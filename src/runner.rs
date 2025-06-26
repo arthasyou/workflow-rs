@@ -14,8 +14,8 @@ use crate::{graph::Graph, model::Context, types::StreamSender};
 
 /// Runner 负责调度节点执行，管理节点间的数据传递与控制流
 pub struct Runner {
-    inputs: HashMap<String, FlowData>,  // 每个节点的输入数据
-    outputs: HashMap<String, FlowData>, // 每个节点的输出数据
+    inputs: HashMap<String, FlowData>,
+    outputs: HashMap<String, FlowData>,
     input_refs: HashMap<String, String>,
     queue: VecDeque<String>,
     pending_predecessors: HashMap<String, usize>,
@@ -76,20 +76,20 @@ impl Runner {
     /// 运行图
     pub async fn run(
         &mut self,
-        _input: Option<FlowData>,
+        input: Option<FlowData>,
         graph: &mut Graph,
         stream_tx: Option<StreamSender>,
     ) -> Result<FlowData> {
         graph.compile()?;
         let context = Context::from_graph(graph);
-        self.prepare(graph)?;
+        self.prepare(graph, input)?;
         self.execute_all_nodes(graph, context, stream_tx).await?;
         let output = self.get_output("end")?;
         Ok(output.clone())
     }
 
     /// 初始化节点状态
-    fn prepare(&mut self, graph: &Graph) -> Result<()> {
+    fn prepare(&mut self, graph: &Graph, mut input: Option<FlowData>) -> Result<()> {
         self.queue.clear();
         self.pending_predecessors.clear();
         self.inputs.clear();
@@ -102,7 +102,11 @@ impl Runner {
                 .insert(node_id.clone(), pred_count);
 
             if pred_count == 0 {
-                // self.inputs.insert(node_id.clone(), DataPayload::default());
+                // 只把 input 塞给第一个没有前驱的节点
+                if let Some(data) = input.take() {
+                    self.inputs.insert(node_id.clone(), data);
+                }
+
                 self.queue.push_back(node_id.clone());
             }
         }
