@@ -13,6 +13,7 @@ pub enum FlowDataType {
     Text,
     Number,
     File,
+    Json,
     Collection,
 }
 

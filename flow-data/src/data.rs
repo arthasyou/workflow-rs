@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use workflow_error::{Error, Result};
 
 use crate::{FileType, FlowDataType};
@@ -22,6 +23,7 @@ pub enum SingleData {
     Text(String),
     Number(f64),
     File(FileValue),
+    Json(serde_json::Value),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -61,6 +63,21 @@ impl FlowData {
             data_type: FlowDataType::Collection,
             value: FlowValue::Collection(Vec::new()),
         }
+    }
+
+    pub fn new_json<T: Serialize>(value: T) -> Result<Self> {
+        let json_value = serde_json::to_value(value)?;
+        Ok(Self {
+            data_type: FlowDataType::Json,
+            value: FlowValue::Single(SingleData::Json(json_value)),
+        })
+    }
+
+    pub fn new_raw_json(data: Value) -> Result<Self> {
+        Ok(Self {
+            data_type: FlowDataType::Json,
+            value: FlowValue::Single(SingleData::Json(data)),
+        })
     }
 }
 

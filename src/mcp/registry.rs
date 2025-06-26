@@ -20,9 +20,14 @@ impl McpClientRegistry {
         map.insert(server_id.to_string(), client);
     }
 
-    pub fn get(&self, server_id: &str) -> Option<Arc<McpClient<SseTransport>>> {
+    pub fn get(&self, server_id: &str) -> workflow_error::Result<Arc<McpClient<SseTransport>>> {
         let map = self.clients.lock().unwrap();
-        map.get(server_id).cloned()
+        map.get(server_id).cloned().ok_or_else(|| {
+            workflow_error::Error::ExecutionError(format!(
+                "MCP client not found for server_id: {}",
+                server_id
+            ))
+        })
     }
 }
 

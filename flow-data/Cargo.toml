@@ -6,5 +6,6 @@ edition = "2024"
 [dependencies]
 service_utils_rs.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 
 workflow-error = { path = "../workflow-error" }

@@ -326,6 +326,7 @@ name = "flow-data"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
  "service_utils_rs",
  "workflow-error",
 ]
@@ -2459,6 +2460,7 @@ dependencies = [
  "flow-data",
  "futures-util",
  "mcp-client-rust",
+ "mcp-core-rs",
  "mcp-transport-rs",
  "model-client",
  "once_cell",
