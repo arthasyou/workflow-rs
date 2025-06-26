@@ -33,8 +33,13 @@ impl Runner {
     }
 
     /// 设置输入数据
-    pub fn set_input(&mut self, node_id: &str, input: FlowData) {
-        self.inputs.insert(node_id.to_string(), input);
+    pub fn set_input(&mut self, node_id: &str, input: Option<FlowData>) {
+        match input {
+            Some(data) => {
+                self.inputs.insert(node_id.to_string(), data);
+            }
+            None => return,
+        }
     }
 
     /// 获取输入数据
@@ -71,6 +76,7 @@ impl Runner {
     /// 运行图
     pub async fn run(
         &mut self,
+        _input: Option<FlowData>,
         graph: &mut Graph,
         stream_tx: Option<StreamSender>,
     ) -> Result<FlowData> {

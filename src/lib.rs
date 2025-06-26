@@ -27,6 +27,6 @@ impl Workflow {
     pub async fn start(mut graph: Graph) -> Result<FlowData> {
         // 构建 Runner 并执行
         let mut runner = Runner::new();
-        runner.run(&mut graph, None).await
+        runner.run(None, &mut graph, None).await
     }
 }
