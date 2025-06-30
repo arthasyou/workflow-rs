@@ -9,3 +9,4 @@ tokio.workspace = true
 serde_json.workspace = true
 service_utils_rs.workspace = true
 mcp-error.workspace = true
+model-gateway-rs.workspace = true

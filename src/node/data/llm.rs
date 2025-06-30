@@ -2,7 +2,7 @@ use core::str;
 use std::sync::Arc;
 
 use flow_data::{FlowData, output::FlowOutput};
-use model_client::{
+use model_gateway_rs::{
     clients::openai::OpenAITextClient,
     sdk::openai::{ChatMessage, ChatResponse},
     traits::ModelClient,

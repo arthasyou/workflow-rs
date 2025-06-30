@@ -1069,14 +1069,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "model-client"
+name = "model-gateway-rs"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9565f75dc742bdf1c1d10ecc7979af3f91696685ee482ea375e8e9e838ce2ff5"
 dependencies = [
  "async-trait",
  "serde",
  "serde_json",
  "service_utils_rs",
- "workflow-error",
+ "thiserror",
 ]
 
 [[package]]
@@ -2445,6 +2447,7 @@ name = "workflow-error"
 version = "0.1.0"
 dependencies = [
  "mcp-error-rs",
+ "model-gateway-rs",
  "serde_json",
  "service_utils_rs",
  "thiserror",
@@ -2462,7 +2465,7 @@ dependencies = [
  "mcp-client-rust",
  "mcp-core-rs",
  "mcp-transport-rs",
- "model-client",
+ "model-gateway-rs",
  "once_cell",
  "serde",
  "serde_json",

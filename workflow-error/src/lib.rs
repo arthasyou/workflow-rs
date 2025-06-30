@@ -52,6 +52,9 @@ pub enum Error {
     #[error("mcp error: {0}")]
     McpError(#[from] mcp_error::Error),
 
+    #[error("model error: {0}")]
+    ModelError(#[from] model_gateway_rs::error::Error),
+
     #[error("Other system error: {0}")]
     SystemError(String),
     #[error("Unknown boxed error: {0}")]

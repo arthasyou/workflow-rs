@@ -1,4 +1,4 @@
-use model_client::{
+use model_gateway_rs::{
     clients::openai::OpenAITextClient,
     sdk::openai::{ChatMessage, Role},
     traits::{ModelClient, StreamModelClient},

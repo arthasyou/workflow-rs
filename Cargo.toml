@@ -7,7 +7,6 @@ edition = "2024"
 members = [
     ".",
     "workflow_macro",
-    "model-client",
     "workflow-error",
     "workflow-utils",
     "flow-data",
@@ -28,10 +27,10 @@ mcp-core = { package = "mcp-core-rs", version = "0.1.0" }
 mcp-client = { package = "mcp-client-rust", version = "0.1.0" }
 mcp-transport = { package = "mcp-transport-rs", version = "0.1.0" }
 mcp-error = { package = "mcp-error-rs", version = "0.1.0" }
+model-gateway-rs = { version = "0.1.0" }
 
 [dependencies]
 workflow_macro = { path = "./workflow_macro" }
-model-client = { path = "./model-client" }
 workflow-error = { path = "./workflow-error" }
 workflow-utils = { path = "./workflow-utils" }
 flow-data = { path = "./flow-data" }
@@ -48,3 +47,4 @@ bytes.workspace = true
 mcp-client = { workspace = true }
 mcp-transport = { workspace = true }
 mcp-core = { workspace = true }
+model-gateway-rs = { workspace = true }
