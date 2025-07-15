@@ -9,15 +9,6 @@ pub enum FlowOutputType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum FlowDataType {
-    Text,
-    Number,
-    File,
-    Json,
-    Collection,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FileType {
     Image,
     Audio,

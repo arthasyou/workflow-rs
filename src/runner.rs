@@ -80,10 +80,14 @@ impl Runner {
         graph: &mut Graph,
         stream_tx: Option<StreamSender>,
     ) -> Result<FlowData> {
+        // println!("Running graph ...");
         graph.compile()?;
+        // println!("Compiled graph ...");
         let context = Context::from_graph(graph);
         self.prepare(graph, input)?;
+        // println!("Prepared graph ...");
         self.execute_all_nodes(graph, context, stream_tx).await?;
+        println!("Executed all nodes ...");
         let output = self.get_output("end")?;
         Ok(output.clone())
     }

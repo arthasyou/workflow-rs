@@ -2,17 +2,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use workflow_error::{Error, Result};
 
-use crate::{FileType, FlowDataType};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FlowData {
-    pub data_type: FlowDataType,
-    pub value: FlowValue,
-}
+use crate::FileType;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "value")]
-pub enum FlowValue {
+pub enum FlowData {
     Single(SingleData),
     Collection(Vec<SingleData>),
 }
@@ -35,27 +29,18 @@ pub struct FileValue {
 /// Constructors for FlowData.
 impl FlowData {
     pub fn new_collection() -> Self {
-        Self {
-            data_type: FlowDataType::Collection,
-            value: FlowValue::Collection(Vec::new()),
-        }
+        Self::Collection(Vec::new())
     }
 
     pub fn try_from_json<T: Serialize>(value: T) -> Result<Self> {
         let json_value = serde_json::to_value(value)?;
-        Ok(Self {
-            data_type: FlowDataType::Json,
-            value: FlowValue::Single(SingleData::Json(json_value)),
-        })
+        Ok(Self::Single(SingleData::Json(json_value)))
     }
 }
 
 impl From<String> for FlowData {
     fn from(text: String) -> Self {
-        Self {
-            data_type: FlowDataType::Text,
-            value: FlowValue::Single(SingleData::Text(text)),
-        }
+        Self::Single(SingleData::Text(text))
     }
 }
 
@@ -67,56 +52,50 @@ impl From<&str> for FlowData {
 
 impl From<f64> for FlowData {
     fn from(n: f64) -> Self {
-        Self {
-            data_type: FlowDataType::Number,
-            value: FlowValue::Single(SingleData::Number(n)),
-        }
+        Self::Single(SingleData::Number(n))
     }
 }
 
 impl From<Value> for FlowData {
     fn from(val: Value) -> Self {
-        Self {
-            data_type: FlowDataType::Json,
-            value: FlowValue::Single(SingleData::Json(val)),
-        }
+        Self::Single(SingleData::Json(val))
     }
 }
 
 /// Accessors (borrowed) for FlowData.
 impl FlowData {
     pub fn as_text(&self) -> Result<&str> {
-        match &self.value {
-            FlowValue::Single(SingleData::Text(s)) => Ok(s),
+        match &self {
+            Self::Single(SingleData::Text(s)) => Ok(s),
             _ => Err(Error::FlowTypeMismatch),
         }
     }
 
     pub fn as_number(&self) -> Result<f64> {
-        match &self.value {
-            FlowValue::Single(SingleData::Number(n)) => Ok(*n),
+        match &self {
+            Self::Single(SingleData::Number(n)) => Ok(*n),
             _ => Err(Error::FlowTypeMismatch),
         }
     }
 
     pub fn as_file(&self) -> Result<&FileValue> {
-        match &self.value {
-            FlowValue::Single(SingleData::File(f)) => Ok(f),
+        match &self {
+            Self::Single(SingleData::File(f)) => Ok(f),
             _ => Err(Error::FlowTypeMismatch),
         }
     }
 
     pub fn as_collection(&self) -> Result<&[SingleData]> {
-        match &self.value {
-            FlowValue::Collection(vec) => Ok(vec),
+        match &self {
+            Self::Collection(vec) => Ok(vec),
             _ => Err(Error::FlowTypeMismatch),
         }
     }
 
     pub fn as_text_list(&self) -> Result<Vec<&str>> {
-        match &self.value {
-            FlowValue::Single(SingleData::Text(s)) => Ok(vec![s.as_str()]),
-            FlowValue::Collection(vec) => {
+        match &self {
+            Self::Single(SingleData::Text(s)) => Ok(vec![s.as_str()]),
+            Self::Collection(vec) => {
                 let mut result = Vec::with_capacity(vec.len());
                 for item in vec {
                     match item {
@@ -131,9 +110,9 @@ impl FlowData {
     }
 
     pub fn as_number_list(&self) -> Result<Vec<f64>> {
-        match &self.value {
-            FlowValue::Single(SingleData::Number(n)) => Ok(vec![*n]),
-            FlowValue::Collection(vec) => {
+        match &self {
+            Self::Single(SingleData::Number(n)) => Ok(vec![*n]),
+            Self::Collection(vec) => {
                 let mut result = Vec::with_capacity(vec.len());
                 for item in vec {
                     match item {
@@ -148,9 +127,9 @@ impl FlowData {
     }
 
     pub fn as_file_list(&self) -> Result<Vec<&FileValue>> {
-        match &self.value {
-            FlowValue::Single(SingleData::File(f)) => Ok(vec![f]),
-            FlowValue::Collection(vec) => {
+        match &self {
+            Self::Single(SingleData::File(f)) => Ok(vec![f]),
+            Self::Collection(vec) => {
                 let mut result = Vec::with_capacity(vec.len());
                 for item in vec {
                     match item {
@@ -168,37 +147,37 @@ impl FlowData {
 /// Accessors (by value) for FlowData.
 impl FlowData {
     pub fn into_text(self) -> Result<String> {
-        match self.value {
-            FlowValue::Single(SingleData::Text(s)) => Ok(s),
+        match self {
+            Self::Single(SingleData::Text(s)) => Ok(s),
             _ => Err(Error::FlowTypeMismatch),
         }
     }
 
     pub fn into_number(self) -> Result<f64> {
-        match self.value {
-            FlowValue::Single(SingleData::Number(n)) => Ok(n),
+        match self {
+            Self::Single(SingleData::Number(n)) => Ok(n),
             _ => Err(Error::FlowTypeMismatch),
         }
     }
 
     pub fn into_file(self) -> Result<FileValue> {
-        match self.value {
-            FlowValue::Single(SingleData::File(f)) => Ok(f),
+        match self {
+            Self::Single(SingleData::File(f)) => Ok(f),
             _ => Err(Error::FlowTypeMismatch),
         }
     }
 
     pub fn into_collection(self) -> Result<Vec<SingleData>> {
-        match self.value {
-            FlowValue::Collection(vec) => Ok(vec),
+        match self {
+            Self::Collection(vec) => Ok(vec),
             _ => Err(Error::FlowTypeMismatch),
         }
     }
 
     pub fn into_text_list(self) -> Result<Vec<String>> {
-        match self.value {
-            FlowValue::Single(SingleData::Text(s)) => Ok(vec![s]),
-            FlowValue::Collection(vec) => {
+        match self {
+            Self::Single(SingleData::Text(s)) => Ok(vec![s]),
+            Self::Collection(vec) => {
                 let mut result = Vec::with_capacity(vec.len());
                 for item in vec {
                     match item {
@@ -213,9 +192,9 @@ impl FlowData {
     }
 
     pub fn into_number_list(self) -> Result<Vec<f64>> {
-        match self.value {
-            FlowValue::Single(SingleData::Number(n)) => Ok(vec![n]),
-            FlowValue::Collection(vec) => {
+        match self {
+            Self::Single(SingleData::Number(n)) => Ok(vec![n]),
+            Self::Collection(vec) => {
                 let mut result = Vec::with_capacity(vec.len());
                 for item in vec {
                     match item {
@@ -230,9 +209,9 @@ impl FlowData {
     }
 
     pub fn into_file_list(self) -> Result<Vec<FileValue>> {
-        match self.value {
-            FlowValue::Single(SingleData::File(f)) => Ok(vec![f]),
-            FlowValue::Collection(vec) => {
+        match self {
+            Self::Single(SingleData::File(f)) => Ok(vec![f]),
+            Self::Collection(vec) => {
                 let mut result = Vec::with_capacity(vec.len());
                 for item in vec {
                     match item {
@@ -247,8 +226,8 @@ impl FlowData {
     }
 
     pub fn into_json(self) -> Result<serde_json::Value> {
-        match self.value {
-            FlowValue::Single(SingleData::Json(json)) => Ok(json),
+        match self {
+            Self::Single(SingleData::Json(json)) => Ok(json),
             _ => Err(Error::FlowTypeMismatch),
         }
     }
@@ -256,48 +235,39 @@ impl FlowData {
 
 /// Utility methods for FlowData.
 impl FlowData {
-    pub fn get_data_type(&self) -> &FlowDataType {
-        &self.data_type
-    }
-
     pub fn merge(self, other: Self) -> Self {
-        let merged = match self.value {
-            FlowValue::Collection(mut vec) => {
-                match other.value {
-                    FlowValue::Single(data) => vec.push(data),
-                    FlowValue::Collection(mut other_vec) => vec.append(&mut other_vec),
+        let merged = match self {
+            Self::Collection(mut vec) => {
+                match other {
+                    Self::Single(data) => vec.push(data),
+                    Self::Collection(mut other_vec) => vec.append(&mut other_vec),
                 }
-                FlowValue::Collection(vec)
+                Self::Collection(vec)
             }
-            FlowValue::Single(data1) => {
+            Self::Single(data1) => {
                 let mut vec = vec![data1];
-                match other.value {
-                    FlowValue::Single(data2) => vec.push(data2),
-                    FlowValue::Collection(mut other_vec) => vec.append(&mut other_vec),
+                match other {
+                    Self::Single(data2) => vec.push(data2),
+                    Self::Collection(mut other_vec) => vec.append(&mut other_vec),
                 }
-                FlowValue::Collection(vec)
+                Self::Collection(vec)
             }
         };
-        FlowData {
-            data_type: FlowDataType::Collection,
-            value: merged,
-        }
+        merged
     }
 
     pub fn merge_mut(&mut self, other: Self) -> &mut Self {
-        match &mut self.value {
-            FlowValue::Collection(vec) => match other.value {
-                FlowValue::Single(data) => vec.push(data),
-                FlowValue::Collection(mut other_vec) => vec.append(&mut other_vec),
+        match self {
+            Self::Collection(vec) => match other {
+                Self::Single(data) => vec.push(data),
+                Self::Collection(mut other_vec) => vec.append(&mut other_vec),
             },
-            FlowValue::Single(data1) => {
+            Self::Single(data1) => {
                 let mut vec = vec![data1.clone()];
-                match other.value {
-                    FlowValue::Single(data2) => vec.push(data2),
-                    FlowValue::Collection(mut other_vec) => vec.append(&mut other_vec),
+                match other {
+                    Self::Single(data2) => vec.push(data2),
+                    Self::Collection(mut other_vec) => vec.append(&mut other_vec),
                 }
-                self.value = FlowValue::Collection(vec);
-                self.data_type = FlowDataType::Collection;
             }
         }
         self

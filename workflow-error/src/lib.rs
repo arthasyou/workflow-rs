@@ -40,9 +40,11 @@ pub enum Error {
     #[error("Join task error: {0}")]
     JoinError(#[from] tokio::task::JoinError),
 
-    #[error("config error: {0}")]
-    ServiceError(#[from] service_utils_rs::error::Error),
+    #[error("toolcraft error: {0}")]
+    ToolcraftError(#[from] toolcraft::error::Error),
 
+    // #[error("config error: {0}")]
+    // ServiceError(#[from] service_utils_rs::error::Error),
     #[error("Mismatched flow data type")]
     FlowTypeMismatch,
 
@@ -57,6 +59,7 @@ pub enum Error {
 
     #[error("Other system error: {0}")]
     SystemError(String),
+
     #[error("Unknown boxed error: {0}")]
     Other(#[from] Box<dyn std::error::Error + Send + Sync>),
 }

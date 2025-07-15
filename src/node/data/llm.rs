@@ -3,8 +3,12 @@ use std::sync::Arc;
 
 use flow_data::{FlowData, output::FlowOutput};
 use model_gateway_rs::{
-    clients::openai::OpenAITextClient,
-    sdk::openai::{ChatMessage, ChatResponse},
+    clients::llm::LlmClient,
+    model::{
+        llm::{ChatMessage, LlmInput},
+        openai::OpenAiChatResponse,
+    },
+    sdk::openai::OpenAIClient,
     traits::ModelClient,
 };
 use serde::Deserialize;
@@ -40,15 +44,16 @@ pub struct LLMNode {
     /// Top-p 采样
     top_p: Option<f32>,
 
-    model_client:
-        Arc<dyn ModelClient<Input = Vec<ChatMessage>, Output = ChatResponse> + Send + Sync>,
+    model_client: Arc<dyn ModelClient<LlmInput, OpenAiChatResponse> + Send + Sync>,
 }
 
 impl LLMNode {
     pub fn new(id: &str, data: Value, processor: &DataProcessorMapping) -> Result<Self> {
         let config: LLMNodeConfig = serde_json::from_value(data)
             .map_err(|_| Error::ExecutionError("Invalid data format for InputNode".into()))?;
-        let client = OpenAITextClient::new(&config.api_key, &config.base_url, &config.model)?;
+
+        let inner = OpenAIClient::new(&config.api_key, &config.base_url, &config.model)?;
+        let client = LlmClient::new(inner);
 
         Ok(Self {
             base: NodeBase::new(id, processor),
@@ -85,15 +90,13 @@ impl Executable for LLMNode {
         };
 
         let msg = data_payload_to_message(&input)?;
-        let r = self.model_client.infer(msg).await?;
-        let response = match r.first_message() {
-            Some(content) => FlowData::from(content),
-            None => {
-                return Err(Error::ExecutionError(
-                    "LLMNode received empty response".into(),
-                ));
-            }
+        let input = LlmInput {
+            messages: msg,
+            max_tokens: None,
         };
+        let r = self.model_client.infer(input).await?;
+        let content = r.first_message();
+        let response = FlowData::from(content);
 
         Ok(response.into())
     }
