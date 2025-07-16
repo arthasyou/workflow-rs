@@ -4,10 +4,7 @@ use std::sync::Arc;
 use flow_data::{FlowData, output::FlowOutput};
 use model_gateway_rs::{
     clients::llm::LlmClient,
-    model::{
-        llm::{ChatMessage, LlmInput},
-        openai::OpenAiChatResponse,
-    },
+    model::llm::{ChatMessage, LlmInput, LlmOutput},
     sdk::openai::OpenAIClient,
     traits::ModelClient,
 };
@@ -44,7 +41,7 @@ pub struct LLMNode {
     /// Top-p 采样
     top_p: Option<f32>,
 
-    model_client: Arc<dyn ModelClient<LlmInput, OpenAiChatResponse> + Send + Sync>,
+    model_client: Arc<dyn ModelClient<LlmInput, LlmOutput> + Send + Sync>,
 }
 
 impl LLMNode {
@@ -95,7 +92,7 @@ impl Executable for LLMNode {
             max_tokens: None,
         };
         let r = self.model_client.infer(input).await?;
-        let content = r.first_message();
+        let content = r.get_content();
         let response = FlowData::from(content);
 
         Ok(response.into())

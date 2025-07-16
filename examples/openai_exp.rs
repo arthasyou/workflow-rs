@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 普通调用示例
     let resp = client.infer(input.clone()).await.unwrap();
-    println!("\n== 普通响应 ==\n{}", resp.choices[0].message.content);
+    println!("\n== 普通响应 ==\n{}", resp.get_content());
 
     // 流式调用示例
     let stream = client.infer_stream(input).await.unwrap();
