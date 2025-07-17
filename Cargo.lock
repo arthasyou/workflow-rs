@@ -1331,14 +1331,15 @@ checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 
 [[package]]
 name = "mcp-client-rust"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "610b772185426b522c98a6adcc1df7218860b3aae7ca6283386c0c727f5691c1"
+checksum = "14a0f03ee050d4066fc2ecf398a0af5a7468e80e51a64cc2688acdd24cbd0fae"
 dependencies = [
  "futures",
  "mcp-core-rs",
  "mcp-error-rs",
  "mcp-transport-rs",
+ "once_cell",
  "serde_json",
  "tower-service",
  "tracing",
@@ -1472,7 +1473,9 @@ dependencies = [
 
 [[package]]
 name = "model-gateway-rs"
-version = "0.1.3"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff5c100de1978a585c16cdc541f98e0ecb19edb831f1465be5409c197867dec9"
 dependencies = [
  "async-trait",
  "serde",
