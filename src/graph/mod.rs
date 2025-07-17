@@ -278,8 +278,12 @@ impl Graph {
         }
 
         // 计算入度
+        let mut seen_edges = HashSet::new();
         for edge in &self.edges {
-            *in_degree.entry(edge.target.clone()).or_insert(0) += 1;
+            let key = (edge.source.clone(), edge.target.clone());
+            if seen_edges.insert(key) {
+                *in_degree.entry(edge.target.clone()).or_insert(0) += 1;
+            }
         }
 
         // 优先处理 `start_node`

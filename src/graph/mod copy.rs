@@ -25,6 +25,9 @@ pub struct Graph {
     /// 前置节点与后继节点映射
     pub predecessors: HashMap<String, HashSet<String>>,
     pub successors: HashMap<String, HashSet<String>>,
+
+    /// 控制节点的出口映射：由 (source_node_id, source_handle) → target_node_id
+    pub handle_routes: HashMap<(String, String), String>,
 }
 
 impl Graph {
@@ -38,6 +41,7 @@ impl Graph {
             compiled: false,
             predecessors: HashMap::new(),
             successors: HashMap::new(),
+            handle_routes: HashMap::new(),
         }
     }
 
@@ -329,6 +333,7 @@ impl Graph {
     pub fn compile(&mut self) -> Result<()> {
         self.predecessors.clear();
         self.successors.clear();
+        self.handle_routes.clear();
 
         // 构建前置/后继节点关系
         for edge in &self.edges {
@@ -348,6 +353,11 @@ impl Graph {
                 .entry(edge.target.clone())
                 .or_default()
                 .insert(edge.source.clone());
+
+            if let Some(handle) = &edge.source_handle {
+                self.handle_routes
+                    .insert((edge.source.clone(), handle.clone()), edge.target.clone());
+            }
         }
 
         // 确保 start_node 没有前置节点
