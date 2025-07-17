@@ -21,10 +21,12 @@ pub struct ModelConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BranchPayload {
+    pub id: String,
     pub condition: String,
-    #[serde(rename = "nodeId")]
-    pub node_id: String,
+    pub value: String,
+    pub value_type: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -37,7 +39,7 @@ impl BranchConfig {
     pub fn to_hashmap(&self) -> HashMap<String, String> {
         let mut map = HashMap::new();
         for branch in &self.branches {
-            map.insert(branch.condition.clone(), branch.node_id.clone());
+            map.insert(branch.condition.clone(), branch.id.clone());
         }
         map
     }
@@ -57,4 +59,36 @@ pub struct AggregatorConfig {
 pub struct RepeatConfig {
     pub child_id: String,
     pub max_iterations: usize,
+}
+
+fn match_branch<'a>(input: &str, branches: &'a [BranchPayload]) -> Option<&'a str> {
+    for branch in branches {
+        let matched = match branch.value_type.as_str() {
+            "string" => match branch.condition.as_str() {
+                "==" => input == branch.value,
+                "!=" => input != branch.value,
+                _ => false,
+            },
+            "number" => {
+                let input_num = input.parse::<f64>().ok()?;
+                let target = branch.value.parse::<f64>().ok()?;
+                match branch.condition.as_str() {
+                    "==" => input_num == target,
+                    "!=" => input_num != target,
+                    ">" => input_num > target,
+                    ">=" => input_num >= target,
+                    "<" => input_num < target,
+                    "<=" => input_num <= target,
+                    _ => false,
+                }
+            }
+            _ => false,
+        };
+
+        if matched {
+            return Some(branch.id.as_str());
+        }
+    }
+
+    None
 }

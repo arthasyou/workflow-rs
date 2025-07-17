@@ -1,4 +1,3 @@
-use mcp_client::client;
 use model_gateway_rs::{
     clients::llm::LlmClient,
     model::llm::{ChatMessage, LlmInput, Role},

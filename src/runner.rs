@@ -189,7 +189,16 @@ impl Runner {
         graph: &Graph,
         context: &Arc<Context>,
     ) -> Result<()> {
-        let next_node_id = &controll.next_node;
+        let next_node_id = graph
+            .handle_routes
+            .get(&(current.to_owned(), controll.next_node.clone()))
+            .ok_or_else(|| {
+                Error::ExecutionError(format!(
+                    "No target node found for source '{}' with handle '{}'",
+                    current, controll.next_node
+                ))
+            })?;
+
         if let Some(successors) = graph.successors.get(current) {
             for succ in successors {
                 if let Some(p) = self.pending_predecessors.get_mut(succ) {
@@ -200,6 +209,7 @@ impl Runner {
                 }
             }
         }
+        self.set_output(current, controll.data.clone());
         if context.get_node(next_node_id).is_some() {
             self.queue.push_back(next_node_id.to_string());
             self.input_refs

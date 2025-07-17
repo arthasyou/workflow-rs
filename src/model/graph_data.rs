@@ -4,10 +4,13 @@ use super::node::Node;
 use crate::{edge::Edge, graph::Graph};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EdgeData {
     pub id: String,
-    pub start: String,
-    pub end: String,
+    pub source: String,
+    pub target: String,
+    pub source_handle: Option<String>,
+    pub target_handle: Option<String>,
 }
 
 /// 持久化使用的 Graph 数据结构
@@ -27,8 +30,10 @@ impl From<Edge> for EdgeData {
     fn from(edge: Edge) -> Self {
         Self {
             id: edge.id,
-            start: edge.start,
-            end: edge.end,
+            source: edge.source,
+            target: edge.target,
+            source_handle: edge.source_handle,
+            target_handle: edge.target_handle,
         }
     }
 }
@@ -51,7 +56,14 @@ impl From<GraphData> for Graph {
             graph.add_node(node).unwrap();
         }
         for edge in data.edges {
-            graph.add_edge(&edge.start, &edge.end).unwrap();
+            graph
+                .add_edge(
+                    &edge.source,
+                    &edge.target,
+                    edge.source_handle,
+                    edge.target_handle,
+                )
+                .unwrap();
         }
         graph.start_node = data.start_node;
         graph.end_node = data.end_node;
@@ -76,11 +88,19 @@ impl GraphData {
     }
 
     /// 添加边信息
-    pub fn add_edge(&mut self, start: &str, end: &str) {
+    pub fn add_edge(
+        &mut self,
+        source: &str,
+        target: &str,
+        source_handle: Option<String>,
+        target_handle: Option<String>,
+    ) {
         self.edges.push(EdgeData {
-            id: format!("{}-{}", start, end),
-            start: start.to_string(),
-            end: end.to_string(),
+            id: format!("{}-{}", source, target),
+            source: source.to_string(),
+            target: target.to_string(),
+            source_handle,
+            target_handle,
         });
     }
 }

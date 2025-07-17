@@ -63,15 +63,12 @@ async fn main() {
             NodeType::Data(DataNode::Input),
             serde_json::json!({
                 "input": {
-                    "data_type": "Text",
-                    "value": {
                         "type": "Single",
                         "value": {
                             "type": "Text",
                             "value": "Hello, this is a test input for the LLM node."
                         }
                     }
-                }
             }),
             DataProcessorMapping::default(),
             None,
@@ -105,8 +102,8 @@ async fn main() {
     }
 
     // 添加边
-    graph.add_edge("start", "llm").unwrap();
-    graph.add_edge("llm", "end").unwrap();
+    graph.add_edge("start", "llm", None, None).unwrap();
+    graph.add_edge("llm", "end", None, None).unwrap();
 
     // graph.add_edge("Control1", "A").unwrap();
     // graph.add_edge("Control1", "B").unwrap();

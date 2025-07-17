@@ -19,13 +19,16 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct LLMNodeConfig {
-    base_url: String,
-    api_key: String,
-    model: String,
-    system_prompt: Option<String>,
-    temperature: Option<f32>,
-    top_p: Option<f32>,
+    #[serde(rename = "apiHost")]
+    pub base_url: String,
+    pub api_key: String,
+    #[serde(rename = "modelName")]
+    pub model: String,
+    pub prompt: Option<String>,
+    pub system_prompt: Option<String>,
+    pub temperature: Option<f32>,
 }
 
 #[derive(Clone)]
@@ -35,19 +38,22 @@ pub struct LLMNode {
     /// 系统提示词（system prompt）
     system_prompt: Option<String>,
 
+    prompt: Option<String>,
+
     /// 生成温度
     temperature: Option<f32>,
-
-    /// Top-p 采样
-    top_p: Option<f32>,
 
     model_client: Arc<dyn ModelClient<LlmInput, LlmOutput> + Send + Sync>,
 }
 
 impl LLMNode {
     pub fn new(id: &str, data: Value, processor: &DataProcessorMapping) -> Result<Self> {
+        println!("data: {:#?}", data);
+
         let config: LLMNodeConfig = serde_json::from_value(data)
             .map_err(|_| Error::ExecutionError("Invalid data format for InputNode".into()))?;
+
+        println!("LLMNode config: {:?}", config);
 
         let inner = OpenAIClient::new(&config.api_key, &config.base_url, &config.model)?;
         let client = LlmClient::new(inner);
@@ -56,8 +62,8 @@ impl LLMNode {
             base: NodeBase::new(id, processor),
             system_prompt: config.system_prompt,
             temperature: config.temperature,
-            top_p: config.top_p,
             model_client: Arc::new(client),
+            prompt: config.prompt,
         })
     }
 }
@@ -67,7 +73,7 @@ impl std::fmt::Debug for LLMNode {
         f.debug_struct("LLMNode")
             .field("system_prompt", &self.system_prompt)
             .field("temperature", &self.temperature)
-            .field("top_p", &self.top_p)
+            .field("prompt", &self.prompt)
             .finish()
     }
 }
