@@ -48,12 +48,8 @@ pub struct LLMNode {
 
 impl LLMNode {
     pub fn new(id: &str, data: Value, processor: &DataProcessorMapping) -> Result<Self> {
-        println!("data: {:#?}", data);
-
         let config: LLMNodeConfig = serde_json::from_value(data)
             .map_err(|_| Error::ExecutionError("Invalid data format for InputNode".into()))?;
-
-        println!("LLMNode config: {:?}", config);
 
         let inner = OpenAIClient::new(&config.api_key, &config.base_url, &config.model)?;
         let client = LlmClient::new(inner);
@@ -92,7 +88,7 @@ impl Executable for LLMNode {
             }
         };
 
-        let msg = data_payload_to_message(&input)?;
+        let msg = data_payload_to_message(&input, &self.system_prompt, &self.prompt)?;
         let input = LlmInput {
             messages: msg,
             max_tokens: None,
@@ -105,7 +101,16 @@ impl Executable for LLMNode {
     }
 }
 
-fn data_payload_to_message(input: &FlowData) -> Result<Vec<ChatMessage>> {
-    let prompt = input.as_text()?;
-    Ok(vec![ChatMessage::user(prompt)])
+fn data_payload_to_message(
+    input: &FlowData,
+    system_prompt: &Option<String>,
+    _prompt: &Option<String>,
+) -> Result<Vec<ChatMessage>> {
+    let content = input.as_text()?;
+    let system_prompt = system_prompt.as_deref().unwrap_or("");
+
+    Ok(vec![
+        ChatMessage::system(system_prompt),
+        ChatMessage::user(content),
+    ])
 }
