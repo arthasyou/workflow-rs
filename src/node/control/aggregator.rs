@@ -40,7 +40,7 @@ impl Executable for AggregatorNode {
         for (_key, node_id) in &self.branches {
             let node = context
                 .get_node(node_id)
-                .ok_or(Error::NodeNotFound(node_id.clone()))?
+                .ok_or(Error::NodeNotFound(node_id.clone().into()))?
                 .clone();
 
             let output = node.execute(input.clone(), context.clone()).await?;

@@ -14,16 +14,16 @@ pub enum Error {
     GraphNotCompiled,
 
     #[error("Node `{0}` already exists.")]
-    NodeAlreadyExists(String),
+    NodeAlreadyExists(Box<str>),
 
     #[error("Node `{0}` not found.")]
-    NodeNotFound(String),
+    NodeNotFound(Box<str>),
 
     #[error("Execution error: {0}")]
-    ExecutionError(String),
+    ExecutionError(Box<str>),
 
     #[error("Invalid edge from `{start}` to `{end}`.")]
-    InvalidEdge { start: String, end: String },
+    InvalidEdge { start: Box<str>, end: Box<str> },
 
     #[error("No end node found.")]
     NoEndNode,
@@ -49,7 +49,7 @@ pub enum Error {
     FlowTypeMismatch,
 
     #[error("Stream chunk error: {0}")]
-    StreamChunkError(String),
+    StreamChunkError(Box<str>),
 
     #[error("mcp error: {0}")]
     McpError(#[from] mcp_error::Error),
@@ -58,7 +58,7 @@ pub enum Error {
     ModelError(#[from] model_gateway_rs::error::Error),
 
     #[error("Other system error: {0}")]
-    SystemError(String),
+    SystemError(Box<str>),
 
     #[error("Unknown boxed error: {0}")]
     Other(#[from] Box<dyn std::error::Error + Send + Sync>),

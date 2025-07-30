@@ -46,7 +46,7 @@ impl Runner {
     pub fn get_input(&self, node_id: &str) -> Result<&FlowData> {
         self.inputs
             .get(node_id)
-            .ok_or_else(|| Error::NodeNotFound(node_id.to_string()))
+            .ok_or_else(|| Error::NodeNotFound(node_id.to_string().into()))
     }
 
     /// 设置输出数据
@@ -58,7 +58,7 @@ impl Runner {
     pub fn get_output(&self, node_id: &str) -> Result<&FlowData> {
         self.outputs
             .get(node_id)
-            .ok_or_else(|| Error::NodeNotFound(node_id.to_string()))
+            .ok_or_else(|| Error::NodeNotFound(node_id.to_string().into()))
     }
 
     pub fn get_resolved_input(&self, node_id: &str) -> Option<FlowData> {
@@ -142,7 +142,7 @@ impl Runner {
 
             let node = context
                 .get_node(&current)
-                .ok_or_else(|| Error::NodeNotFound(current.clone()))?;
+                .ok_or_else(|| Error::NodeNotFound(current.clone().into()))?;
 
             let output = node.execute(input_value, context.clone()).await?;
 
@@ -193,10 +193,13 @@ impl Runner {
             .handle_routes
             .get(&(current.to_owned(), controll.next_node.clone()))
             .ok_or_else(|| {
-                Error::ExecutionError(format!(
-                    "No target node found for source '{}' with handle '{}'",
-                    current, controll.next_node
-                ))
+                Error::ExecutionError(
+                    format!(
+                        "No target node found for source '{}' with handle '{}'",
+                        current, controll.next_node
+                    )
+                    .into(),
+                )
             })?;
 
         if let Some(successors) = graph.successors.get(current) {

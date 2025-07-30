@@ -43,7 +43,7 @@ impl Executable for RepeatNode {
                 for _ in 0 .. self.max_iterations {
                     let child_node = context
                         .get_node(&self.child_id)
-                        .ok_or_else(|| Error::NodeNotFound(self.child_id.clone()))?;
+                        .ok_or_else(|| Error::NodeNotFound(self.child_id.clone().into()))?;
 
                     let output = child_node
                         .execute(Some(current_input), context.clone())

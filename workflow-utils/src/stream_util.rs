@@ -67,10 +67,9 @@ pub async fn forward_and_collect_stream(
                 collected_chunks.push(bytes.clone()); // collect
             }
             Err(e) => {
-                return Err(Error::StreamChunkError(format!(
-                    "stream chunk error: {}",
-                    e
-                )));
+                return Err(Error::StreamChunkError(
+                    format!("stream chunk error: {}", e).into(),
+                ));
             }
         }
     }

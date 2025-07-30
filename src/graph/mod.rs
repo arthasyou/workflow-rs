@@ -63,7 +63,7 @@ impl Graph {
 
     pub fn set_start_node(&mut self, node: Node) -> Result<()> {
         if self.start_node.is_some() {
-            return Err(Error::NodeAlreadyExists(node.id));
+            return Err(Error::NodeAlreadyExists(node.id.into()));
         }
         let node_id = node.id.clone();
         self.add_node(node)?;
@@ -73,7 +73,7 @@ impl Graph {
 
     pub fn set_end_node(&mut self, node: Node) -> Result<()> {
         if self.end_node.is_some() {
-            return Err(Error::NodeAlreadyExists(node.id));
+            return Err(Error::NodeAlreadyExists(node.id.into()));
         }
         let node_id = node.id.clone();
         self.add_node(node)?;
@@ -84,7 +84,7 @@ impl Graph {
     /// 添加节点到持久化数据
     pub fn add_node(&mut self, node: Node) -> Result<()> {
         if self.nodes.contains_key(&node.id) {
-            return Err(Error::NodeAlreadyExists(node.id.clone()));
+            return Err(Error::NodeAlreadyExists(node.id.clone().into()));
         }
         self.nodes.insert(node.id.clone(), node);
         self.mark_uncompiled();
@@ -94,7 +94,7 @@ impl Graph {
     /// 更新节点数据
     pub fn update_node(&mut self, node: Node) -> Result<()> {
         if !self.nodes.contains_key(&node.id) {
-            return Err(Error::NodeNotFound(node.id.clone()));
+            return Err(Error::NodeNotFound(node.id.clone().into()));
         }
 
         self.nodes.insert(node.id.clone(), node);
@@ -105,7 +105,7 @@ impl Graph {
     /// 删除节点
     pub fn remove_node(&mut self, node_id: &str) -> Result<()> {
         if !self.nodes.contains_key(node_id) {
-            return Err(Error::NodeNotFound(node_id.to_string()));
+            return Err(Error::NodeNotFound(node_id.to_string().into()));
         }
 
         // 移除节点数据
@@ -139,21 +139,21 @@ impl Graph {
     ) -> Result<()> {
         if self.end_node.as_deref() == Some(source) {
             return Err(Error::ExecutionError(
-                "End node cannot have outgoing edges.".to_string(),
+                "End node cannot have outgoing edges.".to_string().into(),
             ));
         }
 
         if self.start_node.as_deref() == Some(target) {
             return Err(Error::ExecutionError(
-                "Start node cannot have incoming edges.".to_string(),
+                "Start node cannot have incoming edges.".to_string().into(),
             ));
         }
 
         if !self.nodes.contains_key(source) {
-            return Err(Error::NodeNotFound(source.to_string()));
+            return Err(Error::NodeNotFound(source.to_string().into()));
         }
         if !self.nodes.contains_key(target) {
-            return Err(Error::NodeNotFound(target.to_string()));
+            return Err(Error::NodeNotFound(target.to_string().into()));
         }
 
         let start_node = self.nodes.get(source).unwrap();
@@ -162,10 +162,13 @@ impl Graph {
         let edge_type = if start_node.is_control_node() {
             // 控制节点出口，只能连接到数据节点
             if end_node.is_control_node() {
-                return Err(Error::ExecutionError(format!(
-                    "Control node '{}' cannot connect to another control node '{}'",
-                    start_node.id, end_node.id
-                )));
+                return Err(Error::ExecutionError(
+                    format!(
+                        "Control node '{}' cannot connect to another control node '{}'",
+                        start_node.id, end_node.id
+                    )
+                    .into(),
+                ));
             }
             EdgeType::Control
         } else {
@@ -191,11 +194,11 @@ impl Graph {
     pub fn remove_edge(&mut self, start: &str, end: &str) -> Result<()> {
         // 检查起点和终点是否存在
         if !self.nodes.contains_key(start) {
-            return Err(Error::NodeNotFound(start.to_string()));
+            return Err(Error::NodeNotFound(start.to_string().into()));
         }
 
         if !self.nodes.contains_key(end) {
-            return Err(Error::NodeNotFound(end.to_string()));
+            return Err(Error::NodeNotFound(end.to_string().into()));
         }
 
         // 移除边（严格匹配 start 和 end）
@@ -205,10 +208,9 @@ impl Graph {
 
         // 如果没有移除任何边，说明边不存在
         if self.edges.len() == initial_len {
-            return Err(Error::ExecutionError(format!(
-                "Edge from {} to {} not found.",
-                start, end
-            )));
+            return Err(Error::ExecutionError(
+                format!("Edge from {} to {} not found.", start, end).into(),
+            ));
         }
 
         // 标记为未编译状态
@@ -225,19 +227,18 @@ impl Graph {
             .position(|edge| edge.source == new_start && edge.target == new_end);
 
         if edge_index.is_none() {
-            return Err(Error::ExecutionError(format!(
-                "Edge from {} to {} not found.",
-                new_start, new_end
-            )));
+            return Err(Error::ExecutionError(
+                format!("Edge from {} to {} not found.", new_start, new_end).into(),
+            ));
         }
 
         // 检查新起点和终点节点是否存在
         if !self.nodes.contains_key(new_start) {
-            return Err(Error::NodeNotFound(new_start.to_string()));
+            return Err(Error::NodeNotFound(new_start.to_string().into()));
         }
 
         if !self.nodes.contains_key(new_end) {
-            return Err(Error::NodeNotFound(new_end.to_string()));
+            return Err(Error::NodeNotFound(new_end.to_string().into()));
         }
 
         let start_node = self.nodes.get(new_start).unwrap();
@@ -246,10 +247,13 @@ impl Graph {
         // 推断 edge_type
         let edge_type = if start_node.is_control_node() {
             if end_node.is_control_node() {
-                return Err(Error::ExecutionError(format!(
-                    "Control node '{}' cannot connect to another control node '{}'",
-                    new_start, new_end
-                )));
+                return Err(Error::ExecutionError(
+                    format!(
+                        "Control node '{}' cannot connect to another control node '{}'",
+                        new_start, new_end
+                    )
+                    .into(),
+                ));
             }
             EdgeType::Control
         } else {
@@ -319,7 +323,7 @@ impl Graph {
         // 检查循环依赖
         if sorted_nodes.len() != self.nodes.len() {
             return Err(Error::ExecutionError(
-                "Cycle detected in graph!".to_string(),
+                "Cycle detected in graph!".to_string().into(),
             ));
         }
 
@@ -342,10 +346,9 @@ impl Graph {
         // 构建前置/后继节点关系
         for edge in &self.edges {
             if !self.nodes.contains_key(&edge.source) || !self.nodes.contains_key(&edge.target) {
-                return Err(Error::ExecutionError(format!(
-                    "Invalid edge from {} to {}",
-                    edge.source, edge.target
-                )));
+                return Err(Error::ExecutionError(
+                    format!("Invalid edge from {} to {}", edge.source, edge.target).into(),
+                ));
             }
 
             self.successors

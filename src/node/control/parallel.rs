@@ -44,7 +44,7 @@ impl Executable for ParallelNode {
         for (key, node_id) in &self.branches {
             let node = context
                 .get_node(node_id)
-                .ok_or(Error::NodeNotFound(node_id.clone()))?
+                .ok_or(Error::NodeNotFound(node_id.clone().into()))?
                 .clone();
 
             let input_clone = input.clone();
@@ -85,7 +85,7 @@ fn spawn_task(
         let value = result?; // result: Result<OutputValue, _>
         let data = value
             .into_data()
-            .map_err(|e| Error::ExecutionError(e.to_string()))?; // now FlowData
+            .map_err(|e| Error::ExecutionError(e.to_string().into()))?; // now FlowData
 
         Ok((key, ControlFlow::new(&node_id, data)))
     }

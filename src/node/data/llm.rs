@@ -51,7 +51,8 @@ impl LLMNode {
         let config: LLMNodeConfig = serde_json::from_value(data)
             .map_err(|_| Error::ExecutionError("Invalid data format for InputNode".into()))?;
 
-        let inner = OpenAIClient::new(&config.api_key, &config.base_url, &config.model)?;
+        let inner = OpenAIClient::new(&config.api_key, &config.base_url, &config.model)
+            .map_err(|e| Error::ExecutionError(format!("OpenAIClient error: {}", e).into()))?;
         let client = LlmClient::new(inner);
 
         Ok(Self {
