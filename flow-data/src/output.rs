@@ -1,4 +1,4 @@
-use toolcraft::request::ByteStream;
+use toolcraft_request::ByteStream;
 use workflow_error::{Error, Result};
 
 use crate::{FlowData, FlowOutputType};

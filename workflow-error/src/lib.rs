@@ -41,7 +41,7 @@ pub enum Error {
     JoinError(#[from] tokio::task::JoinError),
 
     #[error("toolcraft error: {0}")]
-    ToolcraftError(#[from] toolcraft::error::Error),
+    ToolcraftError(#[from] toolcraft_request::error::Error),
 
     // #[error("config error: {0}")]
     // ServiceError(#[from] service_utils_rs::error::Error),

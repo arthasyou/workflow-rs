@@ -7,6 +7,6 @@ edition = "2024"
 thiserror.workspace = true
 tokio.workspace = true
 serde_json.workspace = true
-toolcraft.workspace = true
+toolcraft-request.workspace = true
 mcp-error.workspace = true
 model-gateway-rs.workspace = true

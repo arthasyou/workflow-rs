@@ -13,6 +13,7 @@ pub enum DataNode {
     Prompt,
     Identity,
     LLM,
+    Http,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

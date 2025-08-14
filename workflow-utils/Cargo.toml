@@ -9,6 +9,6 @@ serde_json.workspace = true
 futures-util.workspace = true
 
 workflow-error = { path = "../workflow-error" }
-toolcraft.workspace = true
+toolcraft-request.workspace = true
 bytes.workspace = true
 tokio.workspace = true

@@ -2,7 +2,7 @@ use serde_json::{Value, json};
 use workflow_rs::{
     Workflow,
     graph::Graph,
-    model::node::{ControlNode, DataNode, DataProcessorMapping, Node, NodeType},
+    model::node::{DataNode, DataProcessorMapping, Node, NodeType},
 };
 
 #[tokio::main]
@@ -82,13 +82,35 @@ async fn main() {
             None,
             None,
         ),
+        // Node::new(
+        //     "llm",
+        //     NodeType::Data(DataNode::LLM),
+        //     json!({
+        //         "apiHost": "http://localhost:11434/v1",
+        //         "modelName": "llama3.2",
+        //         "apiKey": "your_api",
+        //         "prompt": "You are a helpful assistant.",
+        //         "systemPrompt": "You are a helpful assistant.",
+        //         "temperature": 0.7
+        //     }),
+        //     DataProcessorMapping::default(),
+        //     None,
+        //     None,
+        // ),
         Node::new(
-            "llm",
-            NodeType::Data(DataNode::LLM),
+            "http_node",
+            NodeType::Data(DataNode::Http),
             json!({
-                "base_url": "http://localhost:11434/v1",
-                "model": "llama3.2",
-                "api_key": "your_api"
+                "url": "http://192.168.1.233:19876/auth/login",
+                "input_data": {
+                    "username": "test",
+                    "password": "123"
+                },
+                "method": "POST",
+                "headers": {
+                    "Accept": "application/json"
+                },
+                "timeout_seconds": 10
             }),
             DataProcessorMapping::default(),
             None,
@@ -102,8 +124,8 @@ async fn main() {
     }
 
     // 添加边
-    graph.add_edge("start", "llm", None, None).unwrap();
-    graph.add_edge("llm", "end", None, None).unwrap();
+    graph.add_edge("start", "http_node", None, None).unwrap();
+    graph.add_edge("http_node", "end", None, None).unwrap();
 
     // graph.add_edge("Control1", "A").unwrap();
     // graph.add_edge("Control1", "B").unwrap();

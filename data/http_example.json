@@ -1,0 +1,75 @@
+{
+  "nodes": [
+    {
+      "id": "start",
+      "node_type": {
+        "Data": "Input"
+      },
+      "data": {
+        "input": {
+          "Single": {
+            "Json": {
+              "query": "hello world"
+            }
+          }
+        }
+      },
+      "processors": {
+        "input": null,
+        "output": null
+      },
+      "input_id": null,
+      "output_id": null
+    },
+    {
+      "id": "http_request",
+      "node_type": {
+        "Data": "Http"
+      },
+      "data": {
+        "url": "https://api.example.com/endpoint",
+        "input_data": {
+          "key": "value",
+          "additional_data": "from config"
+        },
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer your-api-key"
+        },
+        "timeout_seconds": 30
+      },
+      "processors": {
+        "input": null,
+        "output": null
+      },
+      "input_id": null,
+      "output_id": null
+    },
+    {
+      "id": "end",
+      "node_type": {
+        "Data": "Identity"
+      },
+      "data": null,
+      "processors": {
+        "input": null,
+        "output": null
+      },
+      "input_id": null,
+      "output_id": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "start",
+      "target": "http_request"
+    },
+    {
+      "source": "http_request",
+      "target": "end"
+    }
+  ],
+  "graph_inputs": [],
+  "graph_outputs": []
+}

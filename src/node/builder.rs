@@ -5,7 +5,7 @@ use workflow_error::Result;
 use super::{
     Executable,
     control::{AggregatorNode, BranchNode, ParallelNode, RepeatNode},
-    data::{PromptNode, indentity::IdentityNode},
+    data::{HttpNode, PromptNode, indentity::IdentityNode},
 };
 use crate::{
     model::node::{ControlNode, DataNode, Node, NodeType},
@@ -26,6 +26,7 @@ pub fn build_node(node: &Node) -> Result<Arc<dyn Executable>> {
             DataNode::Prompt => Box::new(PromptNode::new(id, data, processors)?),
             DataNode::Identity => Box::new(IdentityNode::new(id, data, processors)?),
             DataNode::LLM => Box::new(LLMNode::new(id, data, processors)?),
+            DataNode::Http => Box::new(HttpNode::new(id, data, processors)?),
         },
         NodeType::Control(orch_node) => match orch_node {
             ControlNode::Branch => Box::new(BranchNode::new(id, data, processors)?),

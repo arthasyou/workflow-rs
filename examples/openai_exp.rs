@@ -1,7 +1,10 @@
 use model_gateway_rs::{
     clients::llm::LlmClient,
-    model::llm::{ChatMessage, LlmInput, Role},
-    sdk::openai::OpenAIClient,
+    model::{
+        llm::{ChatMessage, LlmInput},
+        role::Role,
+    },
+    sdk::openai::OpenAiSdk,
     traits::{ModelClient, StreamModelClient},
 };
 use workflow_utils::stream_util::print_stream_chunks;
@@ -13,7 +16,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let base_url = "http://localhost:11434/v1";
     let model = "llama3.2";
 
-    let sdk = OpenAIClient::new(api_key, base_url, model).unwrap();
+    let sdk = OpenAiSdk::new(api_key, base_url, model).unwrap();
     let client = LlmClient::new(sdk);
 
     // 准备 ChatMessage
@@ -33,7 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 流式调用示例
     let stream = client.infer_stream(input).await.unwrap();
-    // println!("\n== 流式响应 ==\n");
+    println!("\n== 流式响应 ==\n");
 
     print_stream_chunks(stream).await.unwrap();
 

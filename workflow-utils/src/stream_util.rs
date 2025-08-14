@@ -3,7 +3,7 @@ use std::io::Write;
 use bytes::Bytes;
 use futures_util::StreamExt;
 use tokio::sync::mpsc::UnboundedSender;
-use toolcraft::request::ByteStream;
+use toolcraft_request::ByteStream;
 use workflow_error::{Error, Result};
 
 pub type StreamSender = UnboundedSender<(String, Bytes)>;
